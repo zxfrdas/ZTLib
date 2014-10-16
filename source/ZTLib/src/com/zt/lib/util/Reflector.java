@@ -5,7 +5,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-import com.zt.lib.annotations.TargetName;
+import com.zt.lib.config.TargetName;
 
 public class Reflector {
 	

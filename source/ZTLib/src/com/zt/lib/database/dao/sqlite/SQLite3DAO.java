@@ -41,7 +41,7 @@ public abstract class SQLite3DAO<T> extends SQLiteOpenHelper implements IDAO<T> 
 	private SQLBeanParser mParser;
 	private String tableName;
 	private Class<?> clazz;
-
+	
 	public SQLite3DAO(Context context, String name, int version, Class<?> bean) {
 		super(context, name, null, version);
 		clazz = bean;
@@ -311,7 +311,7 @@ public abstract class SQLite3DAO<T> extends SQLiteOpenHelper implements IDAO<T> 
 						values.put(name, field.getDouble(bean));
 					}
 				} else if (SQLDataType.TEXT == type) {
-					values.put(name, field.get(bean).toString());
+					values.put(name, String.valueOf(field.get(bean)));
 				} else if (SQLDataType.NULL == type) {
 					values.putNull(name);
 				}

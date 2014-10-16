@@ -1,4 +1,4 @@
-package com.zt.lib.annotations;
+package com.zt.lib.config;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
