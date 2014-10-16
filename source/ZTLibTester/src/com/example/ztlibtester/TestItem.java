@@ -1,22 +1,22 @@
 package com.example.ztlibtester;
 
-import com.zt.lib.database.util.Column;
-import com.zt.lib.database.util.SQLite3DataType;
-import com.zt.lib.database.util.Table;
+import com.zt.lib.database.SQLDataType;
+import com.zt.lib.database.bean.Column;
+import com.zt.lib.database.bean.Table;
 
 @Table(name="tbl_Test")
 public class TestItem {
 	
-	@Column(index=1, name="column_1", type=SQLite3DataType.INTEGER)
+	@Column(index=1, name="column_1", type=SQLDataType.INTEGER)
 	public int testInt;
 	
-	@Column(index=2, name="column_2", type=SQLite3DataType.REAL)
+	@Column(index=2, name="column_2", type=SQLDataType.REAL)
 	public double testFloat;
 	
-	@Column(index=3, name="column_3", type=SQLite3DataType.INTEGER)
+	@Column(index=3, name="column_3", type=SQLDataType.INTEGER)
 	public boolean testBoolean;
 	
-	@Column(index=4, name="column_4", type=SQLite3DataType.TEXT)
+	@Column(index=4, name="column_4", type=SQLDataType.TEXT)
 	public String testString;
 	
 }

@@ -15,23 +15,22 @@ import com.zt.lib.config.EnumConfigType;
 import com.zt.lib.config.ReaderWriter;
 
 public class PropReaderWriterImpl implements ReaderWriter {
-	
+
 	private WeakReference<Context> mContextRef;
 	private SetValueProperties mProper;
 	private String mFileName;
 
 	@Override
-	public void loadFile(String name, Context context) throws IOException
-	{
+	public void loadFile(String name, Context context) throws IOException {
 		mContextRef = new WeakReference<Context>(context);
 		mFileName = name + EnumConfigType.PROP.value();
 		mProper = new SetValueProperties();
-		mProper.load(new InputStreamReader(mContextRef.get().openFileInput(mFileName)));
+		mProper.load(new InputStreamReader(mContextRef.get()
+				.openFileInput(mFileName)));
 	}
 
 	@Override
-	public Object get(String name)
-	{
+	public Object get(String name) {
 		Object o = null;
 		if (null != mProper) {
 			o = mProper.getByArray(name);
@@ -40,8 +39,7 @@ public class PropReaderWriterImpl implements ReaderWriter {
 	}
 
 	@Override
-	public int getInt(String name)
-	{
+	public int getInt(String name) {
 		int i = 0;
 		if (null != mProper && null != mProper.getProperty(name)) {
 			i = Integer.valueOf(mProper.getProperty(name));
@@ -50,8 +48,7 @@ public class PropReaderWriterImpl implements ReaderWriter {
 	}
 
 	@Override
-	public boolean getBoolean(String name)
-	{
+	public boolean getBoolean(String name) {
 		boolean b = false;
 		if (null != mProper && null != mProper.getProperty(name)) {
 			b = Boolean.valueOf(mProper.getProperty(name));
@@ -60,8 +57,7 @@ public class PropReaderWriterImpl implements ReaderWriter {
 	}
 
 	@Override
-	public String getString(String name)
-	{
+	public String getString(String name) {
 		StringBuilder sb = new StringBuilder();
 		if (null != mProper && null != mProper.getProperty(name)) {
 			sb.append(mProper.getProperty(name));
@@ -70,8 +66,7 @@ public class PropReaderWriterImpl implements ReaderWriter {
 	}
 
 	@Override
-	public String[] getStringArray(String name)
-	{
+	public String[] getStringArray(String name) {
 		String[] sArray = null;
 		if (null != mProper) {
 			sArray = mProper.getPropertyAll(name);
@@ -80,8 +75,7 @@ public class PropReaderWriterImpl implements ReaderWriter {
 	}
 
 	@Override
-	public Map<String, ?> getAll()
-	{
+	public Map<String, ?> getAll() {
 		Map<String, Object> m = new Hashtable<String, Object>();
 		Object o = null;
 		if (null != mProper) {
@@ -100,8 +94,7 @@ public class PropReaderWriterImpl implements ReaderWriter {
 	}
 
 	@Override
-	public ReaderWriter set(String name, Object value)
-	{
+	public ReaderWriter set(String name, Object value) {
 		if (null != mProper) {
 			mProper.put(name, value);
 		}
@@ -109,8 +102,7 @@ public class PropReaderWriterImpl implements ReaderWriter {
 	}
 
 	@Override
-	public ReaderWriter setInt(String name, int value)
-	{
+	public ReaderWriter setInt(String name, int value) {
 		if (null != mProper) {
 			mProper.setProperty(name, String.valueOf(value));
 		}
@@ -118,8 +110,7 @@ public class PropReaderWriterImpl implements ReaderWriter {
 	}
 
 	@Override
-	public ReaderWriter setBoolean(String name, boolean value)
-	{
+	public ReaderWriter setBoolean(String name, boolean value) {
 		if (null != mProper) {
 			mProper.setProperty(name, String.valueOf(value));
 		}
@@ -127,8 +118,7 @@ public class PropReaderWriterImpl implements ReaderWriter {
 	}
 
 	@Override
-	public ReaderWriter setString(String name, String value)
-	{
+	public ReaderWriter setString(String name, String value) {
 		if (null != mProper) {
 			mProper.setProperty(name, value);
 		}
@@ -136,8 +126,7 @@ public class PropReaderWriterImpl implements ReaderWriter {
 	}
 
 	@Override
-	public ReaderWriter setStringArray(String name, String[] value)
-	{
+	public ReaderWriter setStringArray(String name, String[] value) {
 		if (null != mProper) {
 			mProper.put(name, value);
 		}
@@ -145,8 +134,7 @@ public class PropReaderWriterImpl implements ReaderWriter {
 	}
 
 	@Override
-	public ReaderWriter setAll(Map<String, ?> value)
-	{
+	public ReaderWriter setAll(Map<String, ?> value) {
 		if (null != mProper) {
 			for (Map.Entry<String, ?> entry : value.entrySet()) {
 				mProper.put(entry.getKey(), entry.getValue());
@@ -156,11 +144,10 @@ public class PropReaderWriterImpl implements ReaderWriter {
 	}
 
 	@Override
-	public void commit() throws IOException
-	{
+	public void commit() throws IOException {
 		if (null != mProper) {
-			OutputStreamWriter osw = new OutputStreamWriter(mContextRef.get().openFileOutput(
-					mFileName, Context.MODE_PRIVATE));
+			OutputStreamWriter osw = new OutputStreamWriter(mContextRef.get()
+					.openFileOutput(mFileName, Context.MODE_PRIVATE));
 			mProper.store(osw, "");
 			osw.close();
 		}

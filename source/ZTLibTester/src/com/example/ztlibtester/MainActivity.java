@@ -1,30 +1,63 @@
 package com.example.ztlibtester;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.os.SystemClock;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
+import android.widget.TextView;
 
-import com.zt.lib.database.ExecCondition;
-import com.zt.lib.database.IDAO;
-import com.zt.lib.util.Reflector;
+import com.zt.lib.database.dao.IDAO;
 
-public class MainActivity extends Activity {
+public class MainActivity extends Activity implements OnClickListener {
 
+	Button insert;
+	Button query;
+	Button delete;
+	TextView time;
+	IDAO<TestItem> dao;
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
+		insert = (Button) findViewById(R.id.insert);
+		query = (Button) findViewById(R.id.query);
+		delete = (Button) findViewById(R.id.delete);
+		time = (TextView) findViewById(R.id.time);
+		dao = new TestDAO(getApplicationContext(),
+				TestItem.class);
+		insert.setOnClickListener(this);
+		query.setOnClickListener(this);
+		delete.setOnClickListener(this);
 	}
 
 	@Override
 	protected void onResume() {
-		// TODO Auto-generated method stub
 		super.onResume();
-		IDAO<TestItem> test = new TestItemDAO(getApplicationContext(), TestItem.class);
+	}
+
+	@Override
+	public void onClick(View v) {
+		final int id = v.getId();
+		long use = 0;
+		if (R.id.insert == id) {
+			use = insert(5000);
+		} else if (R.id.query == id) {
+			use = query();
+		} else if (R.id.delete == id) {
+			use = delete();
+		}
+		int count = dao.getCount();
+		time.setText("耗时 = " + use + ", 平均一次操作耗时 = " + (double) use / count);
+	}
+	
+	public long insert(int count) {
 		ArrayList<TestItem> items = new ArrayList<TestItem>();
-		for (int i = 0; i < 10; i++) {
+		for (int i = 0; i < count; i++) {
 			TestItem item = new TestItem();
 			item.testBoolean = i % 2 == 0 ? true : false;
 			item.testFloat = 2.3 + i;
@@ -32,28 +65,22 @@ public class MainActivity extends Activity {
 			item.testString = "first" + i;
 			items.add(item);
 		}
-		// test.insert(items);
-		// test.update(items.get(6),
-		// ExecCondition.Build().where("testString").equal("first1").done());
-		// test.delete(ExecCondition.Build().where("testInt").lessEqual(16).and().where("testBoolean").equal(true).done());
-		// test.deleteAll();
-		ArrayList<TestItem> items2 = new ArrayList<TestItem>();
-		for (int i = 0; i < 10; i++) {
-			TestItem item = new TestItem();
-			item.testBoolean = i % 2 != 0 ? true : false;
-			item.testFloat = 20.3 + i;
-			item.testInt = 100 + i;
-			item.testString = "first" + i;
-			items.add(item);
-		}
-		// test.updateList(items2,
-		// ExecCondition.Build().where("testInt").equal(arg))
-		List<TestItem> item3 = test.query(ExecCondition.Build().where("testInt").more(12).and()
-				.where("testBoolean").equal(true).and().where("testString").notEqual("first4")
-				.done());
-		for (TestItem item : item3) {
-			System.out.println(Reflector.toString(item));
-		}
-		System.out.println("db count = " + test.getCount());
+		long start = SystemClock.currentThreadTimeMillis();
+		dao.insert(items);
+		return SystemClock.currentThreadTimeMillis() - start;
 	}
+	
+	public long query() {
+		long start = SystemClock.currentThreadTimeMillis();
+		dao.queryAll();
+		return SystemClock.currentThreadTimeMillis() - start;
+	}
+	
+	public long delete() {
+		long start = SystemClock.currentThreadTimeMillis();
+		dao.deleteAll();
+		return SystemClock.currentThreadTimeMillis() - start;
+	}
+	
+	
 }

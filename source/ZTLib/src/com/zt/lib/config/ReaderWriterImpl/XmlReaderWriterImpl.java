@@ -19,20 +19,19 @@ public class XmlReaderWriterImpl implements ReaderWriter {
 	private SharedPreferences mSharedPref;
 	private Editor mSpEditor;
 	private String mFileName;
-	
+
 	@Override
-	public void loadFile(String name, Context context) throws IOException
-	{
+	public void loadFile(String name, Context context) throws IOException {
 		mContextRef = new WeakReference<Context>(context);
 		mFileName = name;
-		mSharedPref = mContextRef.get().getSharedPreferences(mFileName, Context.MODE_MULTI_PROCESS);
+		mSharedPref = mContextRef.get().getSharedPreferences(mFileName,
+				Context.MODE_MULTI_PROCESS);
 		mSpEditor = mSharedPref.edit();
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public Object get(String name)
-	{
+	public Object get(String name) {
 		Object o = null;
 		if (null != mSharedPref) {
 			if (mSharedPref.getAll().get(name) instanceof Set<?>) {
@@ -45,8 +44,7 @@ public class XmlReaderWriterImpl implements ReaderWriter {
 	}
 
 	@Override
-	public int getInt(String name)
-	{
+	public int getInt(String name) {
 		int i = 0;
 		if (null != mSharedPref) {
 			i = mSharedPref.getInt(name, 0);
@@ -55,8 +53,7 @@ public class XmlReaderWriterImpl implements ReaderWriter {
 	}
 
 	@Override
-	public boolean getBoolean(String name)
-	{
+	public boolean getBoolean(String name) {
 		boolean b = false;
 		if (null != mSharedPref) {
 			b = mSharedPref.getBoolean(name, false);
@@ -65,8 +62,7 @@ public class XmlReaderWriterImpl implements ReaderWriter {
 	}
 
 	@Override
-	public String getString(String name)
-	{
+	public String getString(String name) {
 		String s = "";
 		if (null != mSharedPref) {
 			s = mSharedPref.getString(name, "");
@@ -75,8 +71,7 @@ public class XmlReaderWriterImpl implements ReaderWriter {
 	}
 
 	@Override
-	public String[] getStringArray(String name)
-	{
+	public String[] getStringArray(String name) {
 		String[] sArray = null;
 		if (null != mSharedPref) {
 			Set<String> set = null;
@@ -89,8 +84,7 @@ public class XmlReaderWriterImpl implements ReaderWriter {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public Map<String, ?> getAll()
-	{
+	public Map<String, ?> getAll() {
 		Map<String, Object> m = new Hashtable<String, Object>();
 		Object o = null;
 		if (null != mSharedPref) {
@@ -108,16 +102,14 @@ public class XmlReaderWriterImpl implements ReaderWriter {
 	}
 
 	@Override
-	public ReaderWriter set(String name, Object value)
-	{
+	public ReaderWriter set(String name, Object value) {
 		if (null != mSharedPref) {
 			setByType(name, value);
 		}
 		return this;
 	}
-	
-	private void setByType(String name, Object value)
-	{
+
+	private void setByType(String name, Object value) {
 		Class<?> c = value.getClass();
 		if (int.class.equals(c) || Integer.class.equals(c)) {
 			mSpEditor.putInt(name, Integer.valueOf(value.toString()));
@@ -139,8 +131,7 @@ public class XmlReaderWriterImpl implements ReaderWriter {
 	}
 
 	@Override
-	public ReaderWriter setInt(String name, int value)
-	{
+	public ReaderWriter setInt(String name, int value) {
 		if (null != mSharedPref) {
 			mSpEditor.putInt(name, value);
 		}
@@ -148,8 +139,7 @@ public class XmlReaderWriterImpl implements ReaderWriter {
 	}
 
 	@Override
-	public ReaderWriter setBoolean(String name, boolean value)
-	{
+	public ReaderWriter setBoolean(String name, boolean value) {
 		if (null != mSharedPref) {
 			mSpEditor.putBoolean(name, value);
 		}
@@ -157,8 +147,7 @@ public class XmlReaderWriterImpl implements ReaderWriter {
 	}
 
 	@Override
-	public ReaderWriter setString(String name, String value)
-	{
+	public ReaderWriter setString(String name, String value) {
 		if (null != mSharedPref) {
 			mSpEditor.putString(name, value);
 		}
@@ -166,8 +155,7 @@ public class XmlReaderWriterImpl implements ReaderWriter {
 	}
 
 	@Override
-	public ReaderWriter setStringArray(String name, String[] value)
-	{
+	public ReaderWriter setStringArray(String name, String[] value) {
 		if (null != mSharedPref) {
 			Set<String> set = new HashSet<String>();
 			for (String s : value) {
@@ -179,8 +167,7 @@ public class XmlReaderWriterImpl implements ReaderWriter {
 	}
 
 	@Override
-	public ReaderWriter setAll(Map<String, ?> value)
-	{
+	public ReaderWriter setAll(Map<String, ?> value) {
 		if (null != mSharedPref) {
 			for (Map.Entry<String, ?> entry : value.entrySet()) {
 				setByType(entry.getKey(), entry.getValue());
@@ -190,8 +177,7 @@ public class XmlReaderWriterImpl implements ReaderWriter {
 	}
 
 	@Override
-	public void commit() throws IOException
-	{
+	public void commit() throws IOException {
 		if (null != mSharedPref) {
 			mSpEditor.commit();
 		}
