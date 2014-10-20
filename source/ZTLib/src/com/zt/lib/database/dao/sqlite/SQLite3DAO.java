@@ -45,7 +45,7 @@ public abstract class SQLite3DAO<T> extends SQLiteOpenHelper implements IDAO<T> 
 	public SQLite3DAO(Context context, String name, int version, Class<?> bean) {
 		super(context, name, null, version);
 		clazz = bean;
-		mParser = SQLBeanParser.getInstace();
+		mParser = new SQLBeanParser();
 		mParser.analyze(clazz);
 		tableName = mParser.getTableName();
 		final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
@@ -59,6 +59,12 @@ public abstract class SQLite3DAO<T> extends SQLiteOpenHelper implements IDAO<T> 
 		db.execSQL(mParser.getTableCreator());
 	}
 
+	@Override
+	public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+		db.execSQL("DROP TABLE IF EXISTS " + tableName);
+		onCreate(db);
+	}
+	
 	@Override
 	public boolean insert(T item) {
 		long ret = -1;
@@ -223,7 +229,7 @@ public abstract class SQLite3DAO<T> extends SQLiteOpenHelper implements IDAO<T> 
 	}
 
 	@Override
-	public List<T> query(Condition condition) {
+	public Collection<T> query(Condition condition) {
 		Cursor c = null;
 		mReadLock.lock();
 		try {

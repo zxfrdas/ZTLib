@@ -22,15 +22,7 @@ public class SQLBeanParser {
 		public Field field;
 	}
 
-	private static class InstanceHolder {
-		private static SQLBeanParser sInstance = new SQLBeanParser();
-	}
-
-	public static SQLBeanParser getInstace() {
-		return InstanceHolder.sInstance;
-	}
-
-	private SQLBeanParser() {
+	public SQLBeanParser() {
 		field_Item = new HashMap<String, ColumnItem>();
 	}
 
@@ -44,17 +36,14 @@ public class SQLBeanParser {
 			Annotation c = field.getAnnotation(Column.class);
 			if (null != c) {
 				ColumnItem column = new ColumnItem();
-				if (0 == ((Column) c).index()) {
-					// primary id, ignore
-					primary = new ColumnItem();
-					primary.index = 0;
-					primary.name = ((Column) c).name();
-					continue;
-				}
 				column.index = ((Column) c).index();
 				column.name = ((Column) c).name();
 				column.type = ((Column) c).type();
 				column.field = field;
+				if (0 == column.index) {
+					// primary id
+					primary = column;
+				}
 				field_Item.put(field.getName(), column);
 			}
 		}
@@ -63,27 +52,29 @@ public class SQLBeanParser {
 
 	private String crateTable() {
 		StringBuilder sb = new StringBuilder();
-		sb.append("create table ").append(table);
+		sb.append("create table ").append(table).append("(");
+		int startIndex = 0;
 		if (null == primary) {
+			// 数据类未声明index=0的键，由我们创建一个。
 			primary = new ColumnItem();
 			primary.index = 0;
 			primary.name = "_id";
+			sb.append(primary.name).append(" integer primary key autoincrement, ");
+			startIndex = 1;
 		}
-		sb.append("(").append(primary.name)
-				.append(" integer primary key autoincrement, ");
-		final int total = field_Item.size();
+		final int total = field_Item.size() + startIndex;
 		// 转换为了按Column中声明的index顺序构造sql语句。
 		Map<Integer, ColumnItem> indexMap = new HashMap<Integer, ColumnItem>();
 		for (ColumnItem item : field_Item.values()) {
 			indexMap.put(item.index, item);
 		}
-		for (int i = 1; i <= total; i ++) {
+		for (int i = startIndex; i < total; i ++) {
 			ColumnItem item = indexMap.get(i);
 			sb.append(item.name).append(" ").append(item.type.toString());
-			if (item.index < total) {
-				sb.append(", ");
-			} else {
+			if (item.index == (total - 1)) {
 				sb.append(");");
+			} else {
+				sb.append(", ");
 			}
 		}
 		return sb.toString();
