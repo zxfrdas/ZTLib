@@ -50,8 +50,7 @@ public class ConfigManager extends Observable {
 	 *            需要ConfigManager管理的配置参数类
 	 * @return instance of {@code ConfigManager}
 	 */
-	public static ConfigManager getInstance(Context context, IConfigData configData)
-	{
+	public static ConfigManager getInstance(Context context, IConfigData configData) {
 		if (null == instance) {
 			synchronized (ConfigManager.class) {
 				if (null == instance) {
@@ -62,20 +61,18 @@ public class ConfigManager extends Observable {
 		return instance;
 	}
 
-	private ConfigManager(Context context, IConfigData configData)
-	{
+	private ConfigManager(Context context, IConfigData configData) {
 		mContextRef = new WeakReference<Context>(context);
 		mConfigData = configData;
 		mNameMap = new SingletonValueMap<String, String>();
 		if (null != mConfigData) {
-			updateNameMap(Reflector.getFieldNames(mConfigData),
-					Reflector.getFieldTargetNameValues(mConfigData));
+			updateNameMap(Reflector.getFieldNames(mConfigData.getClass()),
+					Reflector.getFieldTargetNameValues(mConfigData.getClass()));
 		}
 		mHandler = new Handler(Looper.getMainLooper());
 	}
 
-	private void updateNameMap(String[] names, String[] annotationNames)
-	{
+	private void updateNameMap(String[] names, String[] annotationNames) {
 		int index = 0;
 		for (String name : names) {
 			Print.d("key = " + name + " value = " + annotationNames[index]);
@@ -99,9 +96,8 @@ public class ConfigManager extends Observable {
 	 *            保存配置文件类型
 	 * @throws IllegalArgumentException
 	 */
-	public void initConfigFile(String name, String defaultName, EnumConfigType type)
-			throws IllegalArgumentException
-	{
+	public synchronized void initConfigFile(String name, String defaultName,
+			EnumConfigType type) throws IllegalArgumentException {
 		eType = type;
 		fileName = name;
 		setFilePath(name);
@@ -126,32 +122,31 @@ public class ConfigManager extends Observable {
 		}
 	}
 
-	private void setFilePath(String name)
-	{
+	private void setFilePath(String name) {
 		switch (eType)
 		{
 		case XML:
 			String temp = mContextRef.get().getFilesDir().getAbsolutePath();
 			int lastSeparate = temp.lastIndexOf("/");
-			StringBuilder builder = new StringBuilder(temp.substring(0, lastSeparate));
+			StringBuilder builder = new StringBuilder(
+					temp.substring(0, lastSeparate));
 			builder.append("/shared_prefs/").append(name).append(eType.value());
 			filePath = builder.toString();
 			break;
 
 		case PROP:
-			filePath = mContextRef.get().getFilesDir().getAbsolutePath() + "/" + name
-					+ eType.value();
+			filePath = mContextRef.get().getFilesDir().getAbsolutePath() + "/"
+					+ name + eType.value();
 			break;
 		}
 	}
-	
+
 	/**
 	 * 获取配置参数类的唯一实例，供UI根据用户选择修改配置数据。
 	 * 
 	 * @return
 	 */
-	public IConfigData getConfigData()
-	{
+	public IConfigData getConfigData() {
 		return mConfigData;
 	}
 
@@ -160,8 +155,7 @@ public class ConfigManager extends Observable {
 	 * 
 	 * @return filePath
 	 */
-	public String getCurFilePath()
-	{
+	public String getCurFilePath() {
 		return filePath;
 	}
 
@@ -171,8 +165,7 @@ public class ConfigManager extends Observable {
 	 * @param key
 	 * @return value to get
 	 */
-	public Object getValue(String key)
-	{
+	public Object getValue(String key) {
 		return mRWer.get(key);
 	}
 
@@ -181,8 +174,7 @@ public class ConfigManager extends Observable {
 	 * 
 	 * @return 长度可能为0
 	 */
-	public Object[] getValues()
-	{
+	public Object[] getValues() {
 		Map<String, ?> map = mRWer.getAll();
 		Object[] values = new Object[map.size()];
 		int index = 0;
@@ -198,8 +190,7 @@ public class ConfigManager extends Observable {
 	 * 
 	 * @return 长度可能为0
 	 */
-	public String[] getKeys()
-	{
+	public String[] getKeys() {
 		Map<String, ?> map = mRWer.getAll();
 		String[] str = new String[map.size()];
 		int index = 0;
@@ -216,20 +207,22 @@ public class ConfigManager extends Observable {
 	 * @param name
 	 *            默认配置文件名
 	 */
-	public void resetToDefault(String name) throws IOException
-	{
+	public synchronized void resetToDefault(String name) throws IOException {
 		InputStream is = null;
 		try {
-			is = mContextRef.get().getAssets().open(name + EnumConfigType.PROP.value());
+			is = mContextRef.get().getAssets()
+					.open(name + EnumConfigType.PROP.value());
 		} catch (FileNotFoundException e) {
 			is = null;
 		}
 		if (null != is) {
 			StreamHelper.output(
 					is,
-					mContextRef.get().openFileOutput(fileName + EnumConfigType.PROP.value(),
+					mContextRef.get().openFileOutput(
+							fileName + EnumConfigType.PROP.value(),
 							Context.MODE_MULTI_PROCESS));
-			mRWer = ReaderWriterFactory.getInstance().getReaderWriterImpl(EnumConfigType.PROP);
+			mRWer = ReaderWriterFactory.getInstance().getReaderWriterImpl(
+					EnumConfigType.PROP);
 			mRWer.loadFile(fileName, mContextRef.get());
 			try {
 				reLoadAllValue();
@@ -237,7 +230,8 @@ public class ConfigManager extends Observable {
 				e.printStackTrace();
 			}
 			if (EnumConfigType.XML == eType) {
-				mRWer = ReaderWriterFactory.getInstance().getReaderWriterImpl(EnumConfigType.XML);
+				mRWer = ReaderWriterFactory.getInstance().getReaderWriterImpl(
+						EnumConfigType.XML);
 				mRWer.loadFile(fileName, mContextRef.get());
 				commit();
 				new File(mContextRef.get().getFilesDir() + "/" + fileName
@@ -251,13 +245,13 @@ public class ConfigManager extends Observable {
 	 * 
 	 * @throws IllegalArgumentException
 	 */
-	public void reLoadAllValue() throws IllegalArgumentException, NullPointerException
-	{
+	public void reLoadAllValue() throws IllegalArgumentException,
+			NullPointerException {
 		reLoadAllValue(mRWer);
 	}
-	
-	private void reLoadAllValue(ReaderWriter rw) throws NullPointerException
-	{
+
+	private synchronized void reLoadAllValue(ReaderWriter rw)
+			throws NullPointerException {
 		if (null == mConfigData) {
 			return;
 		}
@@ -265,35 +259,40 @@ public class ConfigManager extends Observable {
 		for (Map.Entry<String, ?> entry : map.entrySet()) {
 			Print.d("key = " + entry.getKey() + ", value = " + entry.getValue());
 			try {
-				Reflector.setFieldValue(mConfigData, mNameMap.getKeyByValue(entry.getKey()),
-						entry.getValue());
+				Reflector.setFieldValue(mConfigData,
+						mNameMap.getKeyByValue(entry.getKey()), entry.getValue());
 			} catch (NoSuchFieldException e) {
 				continue;
 			}
 		}
 		notifyConfigChanged();
 	}
-	
+
 	/**
 	 * 将指定输入流中的数据赋值给配置参数类，不写入文件。
-	 * <p>可用于根据规定，在一定条件下临时变更配置参数
-	 * @param is 包含配置参数键值对的文件输入流
-	 * @throws NullArgException 输入流为空时抛出错误
+	 * <p>
+	 * 可用于根据规定，在一定条件下临时变更配置参数
+	 * 
+	 * @param is
+	 *            包含配置参数键值对的文件输入流
+	 * @throws NullArgException
+	 *             输入流为空时抛出错误
 	 */
-	public void tempLoadFile(InputStream is) throws NullArgException
-	{
-		if (null == is) throw new NullArgException();
+	public synchronized void tempLoadFile(InputStream is) throws NullArgException {
+		if (null == is)
+			throw new NullArgException();
 		String tempFile = "tempFile";
 		try {
 			StreamHelper.output(
 					is,
-					mContextRef.get().openFileOutput(tempFile + EnumConfigType.PROP.value(),
+					mContextRef.get().openFileOutput(
+							tempFile + EnumConfigType.PROP.value(),
 							Context.MODE_MULTI_PROCESS));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		ReaderWriter tempRWer = ReaderWriterFactory.getInstance().getReaderWriterImpl(
-				EnumConfigType.PROP);
+		ReaderWriter tempRWer = ReaderWriterFactory.getInstance()
+				.getReaderWriterImpl(EnumConfigType.PROP);
 		try {
 			tempRWer.loadFile(tempFile, mContextRef.get());
 		} catch (IOException e) {
@@ -301,14 +300,13 @@ public class ConfigManager extends Observable {
 		}
 		reLoadAllValue(tempRWer);
 	}
-	
+
 	/**
 	 * 提交更改，将所有数据写入文件
 	 * 
 	 * @throws IOException
 	 */
-	public void commit() throws IOException
-	{
+	public void commit() throws IOException {
 		setAllValue();
 		notifyConfigChanged();
 	}
@@ -318,12 +316,11 @@ public class ConfigManager extends Observable {
 	 * 
 	 * @throws IOException
 	 */
-	private ConfigManager setAllValue() throws IOException
-	{
+	private synchronized ConfigManager setAllValue() throws IOException {
 		if (null == mConfigData) {
 			return this;
 		}
-		String[] names = Reflector.getFieldNames(mConfigData);
+		String[] names = Reflector.getFieldNames(mConfigData.getClass());
 		Object[] values = Reflector.getFieldValues(mConfigData);
 		Map<String, Object> map = new Hashtable<String, Object>();
 		for (int i = 0; i < names.length; i++) {
@@ -333,13 +330,11 @@ public class ConfigManager extends Observable {
 		return this;
 	}
 
-	private void notifyConfigChanged()
-	{
+	private synchronized void notifyConfigChanged() {
 		mHandler.post(new Runnable() {
-			
+
 			@Override
-			public void run()
-			{
+			public void run() {
 				instance.setChanged();
 				instance.notifyObservers(mConfigData);
 			}
