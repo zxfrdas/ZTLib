@@ -30,13 +30,26 @@ public class Print {
 
 	public static void d(String TAG, Object msg) {
 		if (debug) {
-			final StackTraceElement line = Thread.currentThread().getStackTrace()[3];
+			final StackTraceElement[] elements = Thread.currentThread().getStackTrace();
+			final int size = elements.length;
+			StackTraceElement line = null;
+			for (int i = 0; i < size; i ++) {
+				String file = elements[i].getFileName();
+				String method = elements[i].getMethodName();
+				if (i < 2) {
+					continue;
+				} else if (!"Print.java".equalsIgnoreCase(file)
+						&& !"d".equalsIgnoreCase(method)) {
+					line = elements[i];
+					break;
+				}
+			}
 			if (null != line) {
 				StringBuilder sb = new StringBuilder();
 				if (color) {
-					sb.append(COLOR_CYAN).append(" ");
+					sb.append(COLOR_CYAN);
 				}
-				sb.append(line.getFileName());
+				sb.append(" ").append(line.getFileName());
 				if (color) {
 					sb.append(COLOR_GREEN);
 				}
