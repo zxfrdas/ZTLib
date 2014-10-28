@@ -10,7 +10,7 @@ public class Print {
 	private static final String COLOR_CLOSE = "\033[0m";
 	private static boolean debug = true;
 	private static boolean color = false;
-	private static String TAG = "";
+	private static String TAG = "print";
 
 	public static void setTAG(String tag) {
 		TAG = tag;
