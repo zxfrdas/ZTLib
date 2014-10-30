@@ -99,10 +99,9 @@ public class Reflector {
 			try {
 				Object o = field.get(object);
 				if (o instanceof String[]) {
-					for (int index = 0; index < ((String[]) o).length; index++) {
-						builder.append("\n").append(field.getName()).append("[")
-								.append(index).append("]").append(" = ")
-								.append(((String[]) o)[index]);
+					for (String s : (String[]) o) {
+						builder.append("\n").append(field.getName()).append(" = ")
+								.append(s);
 					}
 				} else {
 					builder.append("\n" + field.getName() + " = " + o);
