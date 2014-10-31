@@ -8,8 +8,7 @@ import android.view.ViewGroup.LayoutParams;
 import android.widget.Button;
 import android.widget.Toast;
 
-import com.zt.lib.DynamicPlugin.IPlugin;
-import com.zt.lib.util.Print;
+import com.konka.dynamicplugin.plugin.IPlugin;
 
 public class PluginImpl implements IPlugin {
 	private Context mHostContext;
@@ -38,7 +37,6 @@ public class PluginImpl implements IPlugin {
 				Toast.makeText(mHostContext, "点击了plugin的button", Toast.LENGTH_SHORT).show();
 			}
 		});
-		Print.d("view in plugin = " + view.hashCode());
 		return (T) view;
 	}
 
