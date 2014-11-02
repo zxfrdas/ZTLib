@@ -4,18 +4,13 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.widget.LinearLayout;
-import android.widget.SeekBar;
-import android.widget.SeekBar.OnSeekBarChangeListener;
-import android.widget.TextView;
 
-import com.konka.android.tv.KKPictureManager;
 import com.konka.dynamicplugin.plugin.IPlugin;
 
 public class PluginImpl implements IPlugin {
 	private Context mHostContext;
 	private LayoutInflater mInflater;
-	private KKPictureManager mPictureManager;
+//	private KKPictureManager mPictureManager;
 	private short miBacklightValue = 0;
 	private Thread mSetBacklightByThread = null;
 	private boolean mbSetBacklightByThreadDone = false;
@@ -26,8 +21,8 @@ public class PluginImpl implements IPlugin {
 		mInflater = (LayoutInflater) context
 				.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
-		mPictureManager = KKPictureManager.getInstance(mHostContext);
-		miBacklightValue = mPictureManager.getBacklight();
+//		mPictureManager = KKPictureManager.getInstance(mHostContext);
+//		miBacklightValue = mPictureManager.getBacklight();
 
 	}
 	
@@ -48,7 +43,7 @@ public class PluginImpl implements IPlugin {
 						} catch (InterruptedException e) {
 							e.printStackTrace();
 						}
-						mPictureManager.setBacklight(miBacklightValue);
+//						mPictureManager.setBacklight(miBacklightValue);
 						Log.d("log", "#### mPictureManager.setBacklight()");
 						mbSetBacklightByThreadDone = true;
 					}
@@ -61,39 +56,7 @@ public class PluginImpl implements IPlugin {
 
 	@Override
 	public <T> T getPluginView() {
-		final LinearLayout layout = (LinearLayout) mInflater.inflate(R.layout.seekbar, null);
-		final TextView text = (TextView) layout.findViewById(R.id.text);
-		final SeekBar seekBar = (SeekBar) layout.findViewById(R.id.seekbar);
-		seekBar.setProgress(miBacklightValue);
-		seekBar.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
-
-			@Override
-			public void onStopTrackingTouch(SeekBar seekBar) {
-			}
-
-			@Override
-			public void onStartTrackingTouch(SeekBar seekBar) {
-			}
-
-			@Override
-			public void onProgressChanged(SeekBar seekBar, int progress,
-					boolean fromUser) {
-				text.setText("plugin progres = " + progress);
-				
-				if (progress <= 0)
-					return;
-
-				if (progress >= 100)
-					return;
-
-				miBacklightValue = (short) progress;
-
-				mbSetBacklightByThreadDone = false;
-				setBacklightByThread();
-
-			}
-		});
-		return (T) layout;
+		return (T) mInflater.inflate(R.layout.main, null);
 	}
 
 }

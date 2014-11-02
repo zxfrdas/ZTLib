@@ -1,9 +1,12 @@
 package com.zt.host;
 
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.konka.dynamicplugin.host.PluginInfo;
@@ -25,12 +28,30 @@ public class MainActivity extends HostActivity implements OnClickListener {
 		mPluginInfo = (TextView) findViewById(R.id.plugin_info);
 		mOpenPlugin = (Button) findViewById(R.id.open_plugin);
 		mOpenPlugin.setOnClickListener(this);
+		Drawable d = getHostContext().getResources().getDrawable(R.drawable.ic_launcher);
+		((ImageView) findViewById(R.id.image)).setImageDrawable(d);
+	}
+
+	@Override
+	protected void onStop() {
+		super.onStop();
+		Log.d("ZT", "onStop");
+	}
+
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		Log.d("ZT", "onDestroy");
 	}
 
 	@Override
 	public void onClick(View v) {
 		final int id = v.getId();
 		if (R.id.open_plugin == id) {
+			new TestDialog(getHostContext()).show();
+//			startService(new Intent(this, TestService.class));
+			Drawable d = getHostContext().getResources().getDrawable(R.drawable.ic_launcher);
+			((ImageView) findViewById(R.id.image)).setImageDrawable(d);
 		}
 	}
 
