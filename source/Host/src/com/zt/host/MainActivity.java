@@ -28,14 +28,8 @@ public class MainActivity extends HostActivity implements OnClickListener {
 		mPluginInfo = (TextView) findViewById(R.id.plugin_info);
 		mOpenPlugin = (Button) findViewById(R.id.open_plugin);
 		mOpenPlugin.setOnClickListener(this);
-		Drawable d = getHostContext().getResources().getDrawable(R.drawable.ic_launcher);
+		Drawable d = getResources().getDrawable(R.drawable.ic_launcher);
 		((ImageView) findViewById(R.id.image)).setImageDrawable(d);
-	}
-
-	@Override
-	protected void onStop() {
-		super.onStop();
-		Log.d("ZT", "onStop");
 	}
 
 	@Override
@@ -49,8 +43,8 @@ public class MainActivity extends HostActivity implements OnClickListener {
 		final int id = v.getId();
 		if (R.id.open_plugin == id) {
 			new TestDialog(getHostContext()).show();
-//			startService(new Intent(this, TestService.class));
-			Drawable d = getHostContext().getResources().getDrawable(R.drawable.ic_launcher);
+			// startService(new Intent(this, TestService.class));
+			Drawable d = getResources().getDrawable(R.drawable.ic_launcher);
 			((ImageView) findViewById(R.id.image)).setImageDrawable(d);
 		}
 	}

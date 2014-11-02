@@ -14,8 +14,7 @@ import android.view.View;
  * @see HostService
  */
 public abstract class HostDialog extends Dialog implements IHost {
-	private PluginManager mPluginManager;
-	private Context mHostContext;
+	private IHost mHost;
 
 	public HostDialog(Context context) {
 		this(context, 0);
@@ -23,36 +22,35 @@ public abstract class HostDialog extends Dialog implements IHost {
 
 	public HostDialog(Context context, int theme) {
 		super(context, theme);
-		mHostContext = context;
-		if (!(mHostContext instanceof HostActivity) && !(mHostContext instanceof HostService)) {
-			throw new IllegalArgumentException("HostDialog的宿主需继承自HostActivity或HostService");
+		if (!(context instanceof IHost)) {
+			throw new IllegalArgumentException("HostDialog的宿主需实现IHost");
 		}
-		mPluginManager = PluginManager.getInstance();
+		mHost = (IHost) context;
 	}
 
 	@Override
 	public final void setContentView(int layoutResID) {
-		mPluginManager.setUsePluginResourcesEnable(false);
+		mHost.getPluginManager().setUsePluginResourcesEnable(false);
 		super.setContentView(layoutResID);
-		mPluginManager.setUsePluginResourcesEnable(true);
+		mHost.getPluginManager().setUsePluginResourcesEnable(true);
 	}
 
 	@Override
 	public final View findViewById(int id) {
-		mPluginManager.setUsePluginResourcesEnable(false);
+		mHost.getPluginManager().setUsePluginResourcesEnable(false);
 		View v = super.findViewById(id);
-		mPluginManager.setUsePluginResourcesEnable(true);
+		mHost.getPluginManager().setUsePluginResourcesEnable(true);
 		return v;
 	}
 
 	@Override
 	public final PluginManager getPluginManager() {
-		return mPluginManager;
+		return mHost.getPluginManager();
 	}
 
 	@Override
 	public final Context getHostContext() {
-		return mHostContext;
+		return mHost.getHostContext();
 	}
 
 }

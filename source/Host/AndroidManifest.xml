@@ -26,7 +26,16 @@
         </activity>
 
         <service android:name="com.zt.host.TestService" >
+            <intent-filter>
+                <action android:name="com.zt.service" />
+            </intent-filter>
         </service>
+
+        <receiver android:name="com.zt.host.TestReceiver" >
+            <intent-filter>
+                <action android:name="com.zt.test" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>
