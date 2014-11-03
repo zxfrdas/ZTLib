@@ -44,8 +44,6 @@ public class MainActivity extends HostActivity implements OnClickListener {
 		if (R.id.open_plugin == id) {
 			new TestDialog(getHostContext()).show();
 			// startService(new Intent(this, TestService.class));
-			Drawable d = getResources().getDrawable(R.drawable.ic_launcher);
-			((ImageView) findViewById(R.id.image)).setImageDrawable(d);
 		}
 	}
 
