@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 
 import android.content.Context;
-import android.content.pm.PackageInfo;
 import android.content.res.AssetManager;
 import android.content.res.Resources;
 import android.content.res.Resources.Theme;
@@ -93,16 +92,18 @@ public class PluginManager {
 			PluginInfo info = new PluginInfo();
 
 			String apkPath = plugin.getAbsolutePath();
-			PackageInfo packageInfo = DLUtils.getPackageInfo(context, apkPath);
 			String appName = DLUtils.getAppLabel(context, apkPath).toString();
-			String packageName = packageInfo.applicationInfo.packageName;
-			String apkName = apkPath.substring(apkPath.lastIndexOf(File.separator) + 1,
+			String pluginClassName = DLUtils.getAppDescription(context, apkPath)
+					.toString();
+			String apkName = apkPath.substring(
+					apkPath.lastIndexOf(File.separator) + 1,
 					apkPath.lastIndexOf("."));
 
 			info.setApkPath(apkPath);
 			info.setName(appName);
-			info.setPackageName(packageName);
-			info.setDexPath(dexFolder.getAbsolutePath() + File.separator + apkName + ".dex");
+			info.setPluginClassName(pluginClassName);
+			info.setDexPath(dexFolder.getAbsolutePath() + File.separator + apkName
+					+ ".dex");
 			loadResources(context, info);
 			mPlugins.add(info);
 		}
@@ -111,10 +112,12 @@ public class PluginManager {
 	private void loadResources(Context context, PluginInfo info) {
 		try {
 			AssetManager assetManager = AssetManager.class.newInstance();
-			Method addAssetPath = assetManager.getClass().getMethod("addAssetPath", String.class);
+			Method addAssetPath = assetManager.getClass().getMethod("addAssetPath",
+					String.class);
 			addAssetPath.invoke(assetManager, info.getApkPath());
 			mAssetMap.put(info.getApkPath(), assetManager);
-			Resources resources = new Resources(assetManager, mSuperResources.getDisplayMetrics(),
+			Resources resources = new Resources(assetManager,
+					mSuperResources.getDisplayMetrics(),
 					mSuperResources.getConfiguration());
 			mResourcesMap.put(info.getApkPath(), resources);
 			Theme theme = resources.newTheme();
@@ -147,16 +150,18 @@ public class PluginManager {
 	 */
 	public View getPluginView(Context context, PluginInfo info) {
 		mCurPluginApkPath = info.getApkPath();
-		IPlugin plugin = launchPlugin(context, info);
-		return plugin.getPluginView();
+		View plugin = launchPlugin(context, info).getPluginView();
+		reset();
+		return plugin; 
 	}
 
 	private IPlugin launchPlugin(Context context, PluginInfo info) {
 		IPlugin plugin = null;
 		try {
 			Class<?> localClass = getPluginClassLoader(context).loadClass(
-					info.getPackageName() + ".PluginImpl");
-			Constructor<?> localConstructor = localClass.getConstructor(new Class[] {});
+					info.getPluginClassName());
+			Constructor<?> localConstructor = localClass
+					.getConstructor(new Class[] {});
 			Object instance = localConstructor.newInstance(new Object[] {});
 			plugin = (IPlugin) instance;
 			plugin.setContext(context);
@@ -172,7 +177,7 @@ public class PluginManager {
 	public void reset() {
 		mCurPluginApkPath = "";
 	}
-	
+
 	public AssetManager getPluginAssetManager() {
 		AssetManager assetManager = null;
 		if (mIsUsePluginResources) {

@@ -4,7 +4,7 @@ public class PluginInfo {
 	private String name;
 	private String apkPath;
 	private String dexPath;
-	private String packageName;
+	private String pluginClassName;
 	
 	public String getName() {
 		return name;
@@ -24,11 +24,11 @@ public class PluginInfo {
 	public void setDexPath(String dexPath) {
 		this.dexPath = dexPath;
 	}
-	public String getPackageName() {
-		return packageName;
+	public String getPluginClassName() {
+		return pluginClassName;
 	}
-	public void setPackageName(String packageName) {
-		this.packageName = packageName;
+	public void setPluginClassName(String pluginClassName) {
+		this.pluginClassName = pluginClassName;
 	}
 	
 	@Override
@@ -37,7 +37,7 @@ public class PluginInfo {
 		sb.append("plugin name = ").append(name).append(", ");
 		sb.append("apkPath = ").append(apkPath).append(", ");
 		sb.append("dexPath = ").append(dexPath).append(", ");
-		sb.append("packageName = ").append(packageName);
+		sb.append("pluginClassName = ").append(pluginClassName).append("\n");
 		return sb.toString();
 	}
 	

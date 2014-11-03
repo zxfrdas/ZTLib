@@ -30,14 +30,7 @@ public class DLUtils {
         if (pkgInfo == null) {
             return null;
         }
-
-        // Workaround for http://code.google.com/p/android/issues/detail?id=9151
-        ApplicationInfo appInfo = pkgInfo.applicationInfo;
-        if (Build.VERSION.SDK_INT >= 8) {
-            appInfo.sourceDir = apkFilepath;
-            appInfo.publicSourceDir = apkFilepath;
-        }
-
+        ApplicationInfo appInfo = addSourceDir(apkFilepath, pkgInfo);
         return pm.getApplicationIcon(appInfo);
     }
 
@@ -47,16 +40,30 @@ public class DLUtils {
         if (pkgInfo == null) {
             return null;
         }
+        ApplicationInfo appInfo = addSourceDir(apkFilepath, pkgInfo);
+        return pm.getApplicationLabel(appInfo);
+    }
+    
+    public static CharSequence getAppDescription(Context context, String apkFilepath) {
+        PackageManager pm = context.getPackageManager();
+        PackageInfo pkgInfo = getPackageInfo(context, apkFilepath);
+        if (pkgInfo == null) {
+            return null;
+        }
+        ApplicationInfo appInfo = addSourceDir(apkFilepath, pkgInfo);
+        return appInfo.loadDescription(pm);
+    }
 
-        // Workaround for http://code.google.com/p/android/issues/detail?id=9151
-        ApplicationInfo appInfo = pkgInfo.applicationInfo;
+    // Workaround for http://code.google.com/p/android/issues/detail?id=9151
+	private static ApplicationInfo addSourceDir(String apkFilepath,
+			PackageInfo pkgInfo) {
+		ApplicationInfo appInfo = pkgInfo.applicationInfo;
         if (Build.VERSION.SDK_INT >= 8) {
             appInfo.sourceDir = apkFilepath;
             appInfo.publicSourceDir = apkFilepath;
         }
-
-        return pm.getApplicationLabel(appInfo);
-    }
+		return appInfo;
+	}
 
     public static void showDialog(Activity activity, String title, String message) {
         new AlertDialog.Builder(activity).setTitle(title).setMessage(message)

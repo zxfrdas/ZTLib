@@ -1,7 +1,6 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
 <resources>
-
     <string name="app_name">Plugin</string>
     <string name="hello_world">Hello world!</string>
-
+    <string name="plugin_class_name">com.zt.plugin.PluginImpl</string>
 </resources>
