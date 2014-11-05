@@ -34,6 +34,7 @@ public class PluginManager {
 	private Map<String, Theme> mThemeMap;
 	private String mCurPluginApkPath;
 	private boolean mIsUsePluginResources;
+	private Map<String, IPlugin> mActivePluginMap;
 
 	private static class InstanceHolder {
 		private static PluginManager sInstance = new PluginManager();
@@ -48,6 +49,7 @@ public class PluginManager {
 		mAssetMap = new HashMap<String, AssetManager>();
 		mResourcesMap = new HashMap<String, Resources>();
 		mThemeMap = new HashMap<String, Resources.Theme>();
+		mActivePluginMap = new HashMap<String, IPlugin>();
 		mIsUsePluginResources = false;
 	}
 
@@ -150,6 +152,13 @@ public class PluginManager {
 	 */
 	public View getPluginView(Context context, PluginInfo info) {
 		mCurPluginApkPath = info.getApkPath();
+		IPlugin plugin = mActivePluginMap.get(mCurPluginApkPath);
+		if (null == plugin) {
+			// plugin is not active, launch it
+			plugin = launchPlugin(context, info);
+			if (null == plugin) throw new NullPointerException("Plugin载入失败");
+			mActivePluginMap.put(mCurPluginApkPath, plugin);
+		}
 		View plugin = launchPlugin(context, info).getPluginView();
 		reset();
 		return plugin; 
@@ -164,7 +173,7 @@ public class PluginManager {
 					.getConstructor(new Class[] {});
 			Object instance = localConstructor.newInstance(new Object[] {});
 			plugin = (IPlugin) instance;
-			plugin.setContext(context);
+			mActivePluginMap.put(info.getApkPath(), plugin);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

@@ -3,7 +3,6 @@ package com.zt.lib.database.condition.sqlite;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.zt.lib.database.bean.SQLBeanParser;
 import com.zt.lib.database.condition.Condition;
 import com.zt.lib.database.condition.IConditionBuilder;
 
@@ -16,18 +15,16 @@ public class SQLiteConditionBuilder implements IConditionBuilder {
 	private List<Orderby> mOrderbys;
 	private Where where;
 	private Orderby orderby;
-	private SQLBeanParser parser;
 	
-	public SQLiteConditionBuilder(SQLBeanParser parser) {
+	public SQLiteConditionBuilder() {
 		mWheres = new ArrayList<Where>();
 		mOrderbys = new ArrayList<Orderby>();
-		this.parser = parser;
 	}
 	
 	@Override
 	public IConditionBuilder where(String column) {
 		where = new Where();
-		where.column = parser.getColumnName(column);
+		where.column = column;
 		return this;
 	}
 
@@ -98,7 +95,7 @@ public class SQLiteConditionBuilder implements IConditionBuilder {
 	@Override
 	public IConditionBuilder orderby(String column) {
 		orderby = new Orderby();
-		orderby.column = parser.getColumnName(column);
+		orderby.column = column;
 		return this;
 	}
 

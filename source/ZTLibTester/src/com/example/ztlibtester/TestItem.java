@@ -2,8 +2,10 @@ package com.example.ztlibtester;
 
 import com.zt.lib.database.SQLDataType;
 import com.zt.lib.database.bean.Column;
+import com.zt.lib.database.bean.Database;
 import com.zt.lib.database.bean.Table;
 
+@Database(name="test.db", version=1)
 @Table(name="tbl_Test")
 public class TestItem {
 	

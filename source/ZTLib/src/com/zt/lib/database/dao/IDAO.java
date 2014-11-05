@@ -1,12 +1,13 @@
 package com.zt.lib.database.dao;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 import com.zt.lib.database.condition.Condition;
 import com.zt.lib.database.condition.IConditionBuilder;
 
-public interface IDAO<T> {
+public interface IDAO {
 
 	/**
 	 * 数据库单个插入操作。
@@ -15,7 +16,7 @@ public interface IDAO<T> {
 	 *            试图插入的数据类
 	 * @return 成功返回{@code true}，反之{@code false}
 	 */
-	boolean insert(T item);
+	<E> boolean insert(E item);
 
 	/**
 	 * 数据库多条插入操作。
@@ -24,7 +25,7 @@ public interface IDAO<T> {
 	 *            试图插入的数据类集合
 	 * @return 成功返回{@code true}，反之{@code false}
 	 */
-	boolean insert(Collection<T> items);
+	<E> boolean insert(Collection<E> items);
 
 	/**
 	 * 数据库删除操作。
@@ -51,7 +52,7 @@ public interface IDAO<T> {
 	 *            操作的条件
 	 * @return 成功返回{@code true}，反之{@code false}
 	 */
-	boolean update(T item, Condition condition);
+	<E> boolean update(E item, Condition condition);
 
 	/**
 	 * 数据库多条更新操作，单一条件
@@ -62,7 +63,7 @@ public interface IDAO<T> {
 	 *            操作的条件
 	 * @return 成功返回{@code true}，反之{@code false}
 	 */
-	boolean update(Collection<T> items, Condition condition);
+	<E> boolean update(Collection<E> items, Condition condition);
 
 	/**
 	 * 数据库多条更新操作，每个数据类对应一个条件
@@ -71,7 +72,7 @@ public interface IDAO<T> {
 	 *            试图更新的数据类和其对应条件的集合
 	 * @return 成功返回{@code true}，反之{@code false}
 	 */
-	boolean update(Map<T, Condition> updates);
+	<E> boolean update(Map<E, Condition> updates);
 
 	/**
 	 * 数据库查询操作
@@ -80,14 +81,14 @@ public interface IDAO<T> {
 	 *            操作的条件
 	 * @return 所有符合条件的数据类
 	 */
-	Collection<T> query(Condition condition);
+	<E> List<E> query(Condition condition);
 
 	/**
 	 * 返回数据库所有结果
 	 * 
 	 * @return 数据库所有数据
 	 */
-	Collection<T> queryAll();
+	<E> List<E> queryAll();
 
 	/**
 	 * 获取共有多少行数据

@@ -18,7 +18,7 @@ public class MainActivity extends Activity implements OnClickListener {
 	Button query;
 	Button delete;
 	TextView time;
-	IDAO<TestItem> dao;
+	IDAO dao;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -28,8 +28,7 @@ public class MainActivity extends Activity implements OnClickListener {
 		query = (Button) findViewById(R.id.query);
 		delete = (Button) findViewById(R.id.delete);
 		time = (TextView) findViewById(R.id.time);
-		dao = new TestDAO(getApplicationContext(),
-				TestItem.class);
+//		dao = SQLite3DAO.getInstance(getApplicationContext(), new TestItemProxy());
 		insert.setOnClickListener(this);
 		query.setOnClickListener(this);
 		delete.setOnClickListener(this);

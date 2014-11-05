@@ -1,11 +1,11 @@
 package com.konka.dynamicplugin.host.app;
 
-import com.konka.dynamicplugin.host.IHost;
-import com.konka.dynamicplugin.host.PluginManager;
-
 import android.app.Dialog;
 import android.content.Context;
 import android.view.View;
+
+import com.konka.dynamicplugin.host.IHost;
+import com.konka.dynamicplugin.host.PluginManager;
 
 /**
  * 提供一个可使用插件，依赖于宿主Activity/Service的Dialog控件
@@ -26,6 +26,11 @@ public abstract class HostDialog extends Dialog implements IHost {
 			throw new IllegalArgumentException("HostDialog的宿主需实现IHost");
 		}
 		mHost = (IHost) context;
+	}
+
+	@Override
+	protected void onStop() {
+		super.onStop();
 	}
 
 	@Override
