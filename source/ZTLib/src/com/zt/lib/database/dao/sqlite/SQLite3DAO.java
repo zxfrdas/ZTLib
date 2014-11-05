@@ -27,7 +27,7 @@ import com.zt.lib.database.condition.IConditionBuilder;
 import com.zt.lib.database.condition.sqlite.SQLiteConditionBuilder;
 import com.zt.lib.database.dao.IDAO;
 
-public abstract class SQLite3DAO implements IDAO {
+public abstract class SQLite3DAO<T> implements IDAO<T> {
 	private final ReadLock mReadLock;
 	private final WriteLock mWriteLock;
 	private SQLiteDatabase mDatabase;
@@ -62,7 +62,7 @@ public abstract class SQLite3DAO implements IDAO {
 			int newVersion, IBeanProxy proxy);
 
 	@Override
-	public <E> boolean insert(E item) {
+	public boolean insert(T item) {
 		long ret = -1;
 		ContentValues values = setColumnToContentValue(mParser.getAllColumnItem(),
 				item);
@@ -81,10 +81,10 @@ public abstract class SQLite3DAO implements IDAO {
 	}
 
 	@Override
-	public <E> boolean insert(Collection<E> items) {
+	public boolean insert(Collection<T> items) {
 		long ret = -1;
 		ArrayList<ContentValues> values = new ArrayList<ContentValues>();
-		for (E item : items) {
+		for (T item : items) {
 			ContentValues value = setColumnToContentValue(
 					mParser.getAllColumnItem(), item);
 			values.add(value);
@@ -145,7 +145,7 @@ public abstract class SQLite3DAO implements IDAO {
 	}
 
 	@Override
-	public <E> boolean update(E item, Condition condition) {
+	public boolean update(T item, Condition condition) {
 		long ret = -1;
 		ContentValues value = setColumnToContentValue(mParser.getAllColumnItem(),
 				item);
@@ -165,10 +165,10 @@ public abstract class SQLite3DAO implements IDAO {
 	}
 
 	@Override
-	public <E> boolean update(Collection<E> items, Condition condition) {
+	public boolean update(Collection<T> items, Condition condition) {
 		long ret = -1;
 		ArrayList<ContentValues> values = new ArrayList<ContentValues>();
-		for (E item : items) {
+		for (T item : items) {
 			ContentValues value = setColumnToContentValue(
 					mParser.getAllColumnItem(), item);
 			values.add(value);
@@ -195,10 +195,10 @@ public abstract class SQLite3DAO implements IDAO {
 	}
 
 	@Override
-	public <E> boolean update(Map<E, Condition> updates) {
+	public boolean update(Map<T, Condition> updates) {
 		long ret = -1;
 		Map<ContentValues, Condition> values = new HashMap<ContentValues, Condition>();
-		for (Entry<E, Condition> update : updates.entrySet()) {
+		for (Entry<T, Condition> update : updates.entrySet()) {
 			ContentValues value = setColumnToContentValue(
 					mParser.getAllColumnItem(), update.getKey());
 			values.put(value, update.getValue());
@@ -225,7 +225,7 @@ public abstract class SQLite3DAO implements IDAO {
 	}
 
 	@Override
-	public <E> List<E> query(Condition condition) {
+	public List<T> query(Condition condition) {
 		Cursor c = null;
 		mReadLock.lock();
 		try {
@@ -238,7 +238,7 @@ public abstract class SQLite3DAO implements IDAO {
 		} finally {
 			mReadLock.unlock();
 		}
-		List<E> items = new ArrayList<E>();
+		List<T> items = new ArrayList<T>();
 		try {
 			items = setCursorValueToBean(c, mParser.getAllColumnItem());
 		} catch (IllegalAccessException e) {
@@ -250,7 +250,7 @@ public abstract class SQLite3DAO implements IDAO {
 	}
 
 	@Override
-	public <E> List<E> queryAll() {
+	public List<T> queryAll() {
 		Cursor c = null;
 		mReadLock.lock();
 		try {
@@ -260,7 +260,7 @@ public abstract class SQLite3DAO implements IDAO {
 		} finally {
 			mReadLock.unlock();
 		}
-		List<E> items = new ArrayList<E>();
+		List<T> items = new ArrayList<T>();
 		try {
 			items = setCursorValueToBean(c, mParser.getAllColumnItem());
 		} catch (IllegalAccessException e) {
@@ -285,8 +285,8 @@ public abstract class SQLite3DAO implements IDAO {
 		return new SQLiteConditionBuilder();
 	}
 
-	private <E> ContentValues setColumnToContentValue(Collection<ColumnItem> items,
-			E bean) {
+	private ContentValues setColumnToContentValue(Collection<ColumnItem> items,
+			T bean) {
 		ContentValues values = new ContentValues();
 		for (ColumnItem item : items) {
 			final String name = item.name;
@@ -333,14 +333,13 @@ public abstract class SQLite3DAO implements IDAO {
 	}
 
 	@SuppressWarnings("unchecked")
-	private <E> List<E> setCursorValueToBean(Cursor cursor,
-			Collection<ColumnItem> items) throws IllegalAccessException,
-			IllegalArgumentException {
-		List<E> beans = new ArrayList<E>();
+	private List<T> setCursorValueToBean(Cursor cursor, Collection<ColumnItem> items)
+			throws IllegalAccessException, IllegalArgumentException {
+		List<T> beans = new ArrayList<T>();
 		while (null != cursor && cursor.moveToNext()) {
-			E item = null;
+			T item = null;
 			try {
-				item = (E) mProxy.getBeanClass().newInstance();
+				item = (T) mProxy.getBeanClass().newInstance();
 			} catch (InstantiationException e) {
 				e.printStackTrace();
 			}

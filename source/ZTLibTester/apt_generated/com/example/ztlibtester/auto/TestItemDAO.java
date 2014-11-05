@@ -4,9 +4,10 @@ import android.content.Context;
 import com.zt.lib.database.apt.IBeanProxy;
 import android.database.sqlite.SQLiteDatabase;
 import com.zt.lib.database.dao.sqlite.SQLite3DAO;
+import com.example.ztlibtester.TestItem;
 import com.example.ztlibtester.auto.TestItemProxy;
 
-public class TestItemDAO extends SQLite3DAO {
+public class TestItemDAO extends SQLite3DAO<TestItem> {
 	// com.example.ztlibtester.TestItem
 	private static TestItemDAO sInstance;
 

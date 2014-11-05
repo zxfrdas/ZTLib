@@ -29,7 +29,7 @@ public class DbProcessor extends AbstractProcessor {
 	private ColumnItem primary;
 	private Map<Integer, ColumnItem> indexItemMap;
 
-	public static class ColumnItem {
+	private static class ColumnItem {
 		public int index;
 		public String name;
 		public SQLDataType type;
@@ -92,17 +92,18 @@ public class DbProcessor extends AbstractProcessor {
 		}
 
 		Database db = element.getAnnotation(Database.class);
-		proxyContent.append("	private final String DATABASE_NAME = ").append("\"")
-				.append(db.name()).append("\"").append(";\n");
-		proxyContent.append("	private final int VERSION = ").append(db.version())
-				.append(";\n");
+		proxyContent.append("	public static final String DATABASE_NAME = ")
+				.append("\"").append(db.name()).append("\"").append(";\n");
+		proxyContent.append("	public static final int VERSION = ")
+				.append(db.version()).append(";\n");
 
 		Table t = element.getAnnotation(Table.class);
-		proxyContent.append("	private final String TABLE = ").append("\"")
+		proxyContent.append("	public static final String TABLE = ").append("\"")
 				.append(t.name()).append("\"").append(";\n");
 
-		proxyContent.append("	private final String TABLE_CREATOR = ").append("\"")
-				.append(crateTable(t.name())).append("\"").append(";\n");
+		proxyContent.append("	public static final String TABLE_CREATOR = ")
+				.append("\"").append(crateTable(t.name())).append("\"")
+				.append(";\n");
 
 		appendIPropMethod(proxyContent, element.getSimpleName().toString());
 
@@ -176,11 +177,13 @@ public class DbProcessor extends AbstractProcessor {
 		daoContent.append("import com.zt.lib.database.apt.IBeanProxy;\n");
 		daoContent.append("import android.database.sqlite.SQLiteDatabase;\n");
 		daoContent.append("import com.zt.lib.database.dao.sqlite.SQLite3DAO;\n");
+		daoContent.append("import ").append(element.toString()).append(";\n");
 		daoContent.append("import ").append(autoAPTPackageName).append(".")
 				.append(proxyClassName).append(";\n");
 		// class
 		daoContent.append("\npublic class ").append(daoClassName)
-				.append(" extends SQLite3DAO {\n");
+				.append(" extends SQLite3DAO<").append(element.getSimpleName())
+				.append("> {\n");
 		daoContent.append("	// ").append(element.toString()).append("\n");
 		// field
 		daoContent.append("	private static ").append(daoClassName)

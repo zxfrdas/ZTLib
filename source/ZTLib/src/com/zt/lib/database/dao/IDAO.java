@@ -7,7 +7,7 @@ import java.util.Map;
 import com.zt.lib.database.condition.Condition;
 import com.zt.lib.database.condition.IConditionBuilder;
 
-public interface IDAO {
+public interface IDAO<T> {
 
 	/**
 	 * 数据库单个插入操作。
@@ -16,7 +16,7 @@ public interface IDAO {
 	 *            试图插入的数据类
 	 * @return 成功返回{@code true}，反之{@code false}
 	 */
-	<E> boolean insert(E item);
+	boolean insert(T item);
 
 	/**
 	 * 数据库多条插入操作。
@@ -25,7 +25,7 @@ public interface IDAO {
 	 *            试图插入的数据类集合
 	 * @return 成功返回{@code true}，反之{@code false}
 	 */
-	<E> boolean insert(Collection<E> items);
+	boolean insert(Collection<T> items);
 
 	/**
 	 * 数据库删除操作。
@@ -52,7 +52,7 @@ public interface IDAO {
 	 *            操作的条件
 	 * @return 成功返回{@code true}，反之{@code false}
 	 */
-	<E> boolean update(E item, Condition condition);
+	boolean update(T item, Condition condition);
 
 	/**
 	 * 数据库多条更新操作，单一条件
@@ -63,7 +63,7 @@ public interface IDAO {
 	 *            操作的条件
 	 * @return 成功返回{@code true}，反之{@code false}
 	 */
-	<E> boolean update(Collection<E> items, Condition condition);
+	boolean update(Collection<T> items, Condition condition);
 
 	/**
 	 * 数据库多条更新操作，每个数据类对应一个条件
@@ -72,7 +72,7 @@ public interface IDAO {
 	 *            试图更新的数据类和其对应条件的集合
 	 * @return 成功返回{@code true}，反之{@code false}
 	 */
-	<E> boolean update(Map<E, Condition> updates);
+	boolean update(Map<T, Condition> updates);
 
 	/**
 	 * 数据库查询操作
@@ -81,14 +81,14 @@ public interface IDAO {
 	 *            操作的条件
 	 * @return 所有符合条件的数据类
 	 */
-	<E> List<E> query(Condition condition);
+	List<T> query(Condition condition);
 
 	/**
 	 * 返回数据库所有结果
 	 * 
 	 * @return 数据库所有数据
 	 */
-	<E> List<E> queryAll();
+	List<T> queryAll();
 
 	/**
 	 * 获取共有多少行数据
