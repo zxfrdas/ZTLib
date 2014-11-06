@@ -34,8 +34,8 @@ public class PluginManager {
 	private Map<String, Theme> mThemeMap;
 	private String mCurPluginApkPath;
 	private boolean mIsUsePluginResources;
-	private Map<String, IPlugin> mActivePluginMap;
-
+	private Map<String, PluginInfo> mEnabledPlugins;
+	
 	private static class InstanceHolder {
 		private static PluginManager sInstance = new PluginManager();
 	}
@@ -49,7 +49,7 @@ public class PluginManager {
 		mAssetMap = new HashMap<String, AssetManager>();
 		mResourcesMap = new HashMap<String, Resources>();
 		mThemeMap = new HashMap<String, Resources.Theme>();
-		mActivePluginMap = new HashMap<String, IPlugin>();
+		mEnabledPlugins = new HashMap<String, PluginInfo>();
 		mIsUsePluginResources = false;
 	}
 
@@ -108,6 +108,7 @@ public class PluginManager {
 					+ ".dex");
 			loadResources(context, info);
 			mPlugins.add(info);
+			mEnabledPlugins.put(pluginClassName, info);
 		}
 	}
 
@@ -152,13 +153,6 @@ public class PluginManager {
 	 */
 	public View getPluginView(Context context, PluginInfo info) {
 		mCurPluginApkPath = info.getApkPath();
-		IPlugin plugin = mActivePluginMap.get(mCurPluginApkPath);
-		if (null == plugin) {
-			// plugin is not active, launch it
-			plugin = launchPlugin(context, info);
-			if (null == plugin) throw new NullPointerException("Plugin载入失败");
-			mActivePluginMap.put(mCurPluginApkPath, plugin);
-		}
 		View plugin = launchPlugin(context, info).getPluginView();
 		reset();
 		return plugin; 
@@ -173,7 +167,7 @@ public class PluginManager {
 					.getConstructor(new Class[] {});
 			Object instance = localConstructor.newInstance(new Object[] {});
 			plugin = (IPlugin) instance;
-			mActivePluginMap.put(info.getApkPath(), plugin);
+			plugin.setContext(context);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -190,7 +184,7 @@ public class PluginManager {
 	public AssetManager getPluginAssetManager() {
 		AssetManager assetManager = null;
 		if (mIsUsePluginResources) {
-			assetManager = mAssetMap.get(mCurPluginApkPath);
+			assetManager = mAssetMap.get(getCurrentCallerPlugin());
 		}
 		return (null != assetManager) ? assetManager : mSupAssetManager;
 	}
@@ -198,7 +192,7 @@ public class PluginManager {
 	public Resources getPluginResources() {
 		Resources resources = null;
 		if (mIsUsePluginResources) {
-			resources = mResourcesMap.get(mCurPluginApkPath);
+			resources = mResourcesMap.get(getCurrentCallerPlugin());
 		}
 		return (null != resources) ? resources : mSuperResources;
 	}
@@ -206,7 +200,7 @@ public class PluginManager {
 	public Theme getPluginTheme() {
 		Theme theme = null;
 		if (mIsUsePluginResources) {
-			theme = mThemeMap.get(mCurPluginApkPath);
+			theme = mThemeMap.get(getCurrentCallerPlugin());
 		}
 		return (null != theme) ? theme : mSuperTheme;
 	}
@@ -220,6 +214,27 @@ public class PluginManager {
 			}
 		}
 		return (null != loader) ? loader : mSuperClassLoader;
+	}
+	
+	private String getCurrentCallerPlugin() {
+		final StackTraceElement[] elements = Thread.currentThread().getStackTrace();
+		final int size = elements.length;
+		PluginInfo info = null;
+		String mainClassName = "";
+		for (int i = 0; i < size; i ++) {
+			String className = elements[i].getClassName();
+			if (className.contains("$")) {
+				// 如果是在内部类中调用，依然考察主类名。
+				mainClassName = className.substring(0, className.lastIndexOf("$"));
+			} else {
+				mainClassName = className;
+			}
+			if (mEnabledPlugins.containsKey(mainClassName)) {
+				info = mEnabledPlugins.get(mainClassName);
+				break;
+			}
+		}
+		return (null != info) ? info.getApkPath() : "";
 	}
 
 }

@@ -1,6 +1,8 @@
 package com.konka.dynamicplugin.plugin;
 
 import android.content.Context;
+import android.view.View;
+import android.view.View.OnAttachStateChangeListener;
 
 /**
  * 插件接口，实现此接口即可将插件APK的视图提供给宿主使用。
@@ -9,7 +11,7 @@ import android.content.Context;
  * <p>
  * 自定义控件逻辑需封装在插件内部，因宿主应用中并没有插件中自定义的控件类。
  */
-public interface IPlugin {
+public interface IPlugin extends OnAttachStateChangeListener {
 	/**
 	 * 宿主初始化插件时传入的宿主之上下文。
 	 * 
@@ -22,5 +24,5 @@ public interface IPlugin {
 	 * 
 	 * @return 插件为宿主提供的视图
 	 */
-	<T> T getPluginView();
+	View getPluginView();
 }
