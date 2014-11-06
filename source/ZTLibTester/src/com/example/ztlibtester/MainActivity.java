@@ -10,6 +10,7 @@ import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.example.ztlibtester.auto.TestItemDAO;
 import com.zt.lib.database.dao.IDAO;
 
 public class MainActivity extends Activity implements OnClickListener {
@@ -18,7 +19,7 @@ public class MainActivity extends Activity implements OnClickListener {
 	Button query;
 	Button delete;
 	TextView time;
-	IDAO dao;
+	IDAO<TestItem> dao;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -28,7 +29,7 @@ public class MainActivity extends Activity implements OnClickListener {
 		query = (Button) findViewById(R.id.query);
 		delete = (Button) findViewById(R.id.delete);
 		time = (TextView) findViewById(R.id.time);
-//		dao = SQLite3DAO.getInstance(getApplicationContext(), new TestItemProxy());
+		dao = TestItemDAO.getInstance(getApplicationContext());
 		insert.setOnClickListener(this);
 		query.setOnClickListener(this);
 		delete.setOnClickListener(this);

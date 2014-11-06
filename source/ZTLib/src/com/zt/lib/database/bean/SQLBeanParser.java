@@ -24,9 +24,6 @@ public class SQLBeanParser {
 	}
 
 	public void analyze(Class<?> clazz) {
-		Annotation t = clazz.getAnnotation(Table.class);
-		if (null == t)
-			throw new NullPointerException("Must Have Table Name");
 		Field[] fields = clazz.getDeclaredFields();
 		for (Field field : fields) {
 			Annotation c = field.getAnnotation(Column.class);
