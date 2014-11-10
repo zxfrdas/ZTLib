@@ -19,7 +19,7 @@ import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteOpenHelper;
 
 import com.zt.lib.database.SQLDataType;
-import com.zt.lib.database.apt.IBeanProxy;
+import com.zt.lib.database.bean.IBeanProxy;
 import com.zt.lib.database.bean.SQLBeanParser;
 import com.zt.lib.database.bean.SQLBeanParser.ColumnItem;
 import com.zt.lib.database.condition.Condition;
@@ -293,6 +293,7 @@ public abstract class SQLite3DAO<T> implements IDAO<T> {
 			final SQLDataType type = item.type;
 			final Field field = item.field;
 			final Class<?> fieldType = field.getType();
+			field.setAccessible(true);
 			try {
 				if (SQLDataType.BLOB == type) {
 					values.put(name, (byte[]) field.get(bean));
@@ -348,6 +349,7 @@ public abstract class SQLite3DAO<T> implements IDAO<T> {
 				final SQLDataType type = ci.type;
 				final Field field = ci.field;
 				final Class<?> fieldType = field.getType();
+				field.setAccessible(true);
 				if (SQLDataType.BLOB == type) {
 					field.set(item, cursor.getBlob(index));
 				} else if (SQLDataType.INTEGER == type) {

@@ -1,4 +1,4 @@
-package com.zt.lib.database.apt;
+package com.zt.lib.database.bean;
 
 public interface IBeanProxy {
 	String getDataBaseName();

@@ -16,13 +16,12 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import javax.tools.JavaFileObject;
 
+import com.zt.lib.database.Column;
+import com.zt.lib.database.Database;
 import com.zt.lib.database.SQLDataType;
-import com.zt.lib.database.bean.Column;
-import com.zt.lib.database.bean.Database;
-import com.zt.lib.database.bean.Table;
+import com.zt.lib.database.Table;
 
-@SupportedAnnotationTypes(value = { "com.zt.lib.database.bean.Table",
-		"com.zt.lib.database.bean.Column" })
+@SupportedAnnotationTypes(value = { "*" })
 @SupportedSourceVersion(SourceVersion.RELEASE_6)
 public class DbProcessor extends AbstractProcessor {
 	private Filer filer;
@@ -68,7 +67,7 @@ public class DbProcessor extends AbstractProcessor {
 		StringBuilder proxyContent = new StringBuilder();
 		proxyContent.append("package ").append(autoAPTPackageName).append(";\n");
 		proxyContent.append("\nimport ").append(element.toString()).append(";\n");
-		proxyContent.append("\nimport com.zt.lib.database.apt.IBeanProxy;\n");
+		proxyContent.append("\nimport com.zt.lib.database.bean.IBeanProxy;\n");
 		proxyContent.append("\npublic class ").append(proxyClassName)
 				.append(" implements IBeanProxy {\n");
 		proxyContent.append("	// ").append(element.toString()).append("\n");
@@ -92,16 +91,16 @@ public class DbProcessor extends AbstractProcessor {
 		}
 
 		Database db = element.getAnnotation(Database.class);
-		proxyContent.append("	public static final String DATABASE_NAME = ")
+		proxyContent.append("	private static final String DATABASE_NAME = ")
 				.append("\"").append(db.name()).append("\"").append(";\n");
-		proxyContent.append("	public static final int VERSION = ")
+		proxyContent.append("	private static final int VERSION = ")
 				.append(db.version()).append(";\n");
 
 		Table t = element.getAnnotation(Table.class);
-		proxyContent.append("	public static final String TABLE = ").append("\"")
+		proxyContent.append("	private static final String TABLE = ").append("\"")
 				.append(t.name()).append("\"").append(";\n");
 
-		proxyContent.append("	public static final String TABLE_CREATOR = ")
+		proxyContent.append("	private static final String TABLE_CREATOR = ")
 				.append("\"").append(crateTable(t.name())).append("\"")
 				.append(";\n");
 
@@ -174,8 +173,8 @@ public class DbProcessor extends AbstractProcessor {
 		daoContent.append("package ").append(autoAPTPackageName).append(";\n");
 		// import
 		daoContent.append("\nimport android.content.Context;\n");
-		daoContent.append("import com.zt.lib.database.apt.IBeanProxy;\n");
 		daoContent.append("import android.database.sqlite.SQLiteDatabase;\n");
+		daoContent.append("import com.zt.lib.database.bean.IBeanProxy;\n");
 		daoContent.append("import com.zt.lib.database.dao.sqlite.SQLite3DAO;\n");
 		daoContent.append("import ").append(element.toString()).append(";\n");
 		daoContent.append("import ").append(autoAPTPackageName).append(".")
@@ -204,7 +203,6 @@ public class DbProcessor extends AbstractProcessor {
 		daoContent.append("\n	@Override");
 		daoContent
 				.append("\n	protected void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion, IBeanProxy proxy) {\n");
-		daoContent.append("		// TODO-You May Do Your Own Work Here\n");
 		daoContent
 				.append("		db.execSQL(\"DROP TABLE IF EXISTS \" + proxy.getTableName());\n");
 		daoContent.append("		db.execSQL(proxy.getTableCreator());\n	}\n");

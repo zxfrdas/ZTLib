@@ -1,4 +1,4 @@
-package com.zt.lib.database.bean;
+package com.zt.lib.database;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -7,6 +7,7 @@ import java.lang.annotation.Target;
 
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.SOURCE)
-public @interface Table {
+public @interface Database {
 	String name();
+	int version();
 }

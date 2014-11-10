@@ -11,6 +11,7 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import com.example.ztlibtester.auto.TestItemDAO;
+import com.example.ztlibtester.auto.TestItemProxy;
 import com.zt.lib.database.dao.IDAO;
 
 public class MainActivity extends Activity implements OnClickListener {
@@ -72,7 +73,9 @@ public class MainActivity extends Activity implements OnClickListener {
 	
 	public long query() {
 		long start = SystemClock.currentThreadTimeMillis();
-		dao.queryAll();
+//		dao.queryAll();
+		dao.query(dao.buildCondition().where(TestItemProxy.testBoolean).equal(true)
+				.buildDone());
 		return SystemClock.currentThreadTimeMillis() - start;
 	}
 	

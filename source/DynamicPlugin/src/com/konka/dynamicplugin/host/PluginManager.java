@@ -106,13 +106,13 @@ public class PluginManager {
 			info.setPluginClassName(pluginClassName);
 			info.setDexPath(dexFolder.getAbsolutePath() + File.separator + apkName
 					+ ".dex");
-			loadResources(context, info);
+			loadResources(info);
 			mPlugins.add(info);
 			mEnabledPlugins.put(pluginClassName, info);
 		}
 	}
 
-	private void loadResources(Context context, PluginInfo info) {
+	private void loadResources(PluginInfo info) {
 		try {
 			AssetManager assetManager = AssetManager.class.newInstance();
 			Method addAssetPath = assetManager.getClass().getMethod("addAssetPath",
@@ -209,7 +209,7 @@ public class PluginManager {
 		ClassLoader loader = null;
 		if (mIsUsePluginResources) {
 			if (null != mCurPluginApkPath && !mCurPluginApkPath.isEmpty()) {
-				loader = DLClassLoader.getClassLoader(mCurPluginApkPath,
+				loader = DLClassLoader.createClassLoader(mCurPluginApkPath,
 						context.getApplicationContext(), mSuperClassLoader);
 			}
 		}

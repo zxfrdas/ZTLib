@@ -1,9 +1,9 @@
 package com.example.ztlibtester;
 
+import com.zt.lib.database.Column;
+import com.zt.lib.database.Database;
 import com.zt.lib.database.SQLDataType;
-import com.zt.lib.database.bean.Column;
-import com.zt.lib.database.bean.Database;
-import com.zt.lib.database.bean.Table;
+import com.zt.lib.database.Table;
 
 @Database(name="test.db", version=1)
 @Table(name="tbl_Test")
