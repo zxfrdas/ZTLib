@@ -1,13 +1,13 @@
-package com.konka.dynamicplugin.auto;
+package com.konka.dynamicplugin.database;
 
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
+
+import com.konka.dynamicplugin.core.PluginInfo;
 import com.zt.lib.database.bean.IBeanProxy;
 import com.zt.lib.database.dao.sqlite.SQLite3DAO;
-import com.konka.dynamicplugin.PluginInfo2;
-import com.konka.dynamicplugin.auto.PluginInfo2Proxy;
 
-public class PluginInfo2DAO extends SQLite3DAO<PluginInfo2> {
+public class PluginInfo2DAO extends SQLite3DAO<PluginInfo> {
 	// com.konka.dynamicplugin.PluginInfo2
 	private static PluginInfo2DAO sInstance;
 

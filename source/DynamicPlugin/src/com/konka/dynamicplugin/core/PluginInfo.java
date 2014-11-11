@@ -1,4 +1,4 @@
-package com.konka.dynamicplugin;
+package com.konka.dynamicplugin.core;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -13,9 +13,9 @@ import com.zt.lib.database.Database;
 import com.zt.lib.database.SQLDataType;
 import com.zt.lib.database.Table;
 
-@Database(name = "plugin", version = 1)
+@Database(name = "plugin.db", version = 1)
 @Table(name="plugins")
-public class PluginInfo2 {
+public class PluginInfo {
 	@Column(index=1, name="Title", type=SQLDataType.TEXT)
 	private String title;
 	@Column(index=2, name="ApkPath", type=SQLDataType.TEXT)
@@ -26,19 +26,22 @@ public class PluginInfo2 {
 	private String entryClass;
 	@Column(index=5, name="Icon", type=SQLDataType.BLOB)
 	private byte[] icon;
-	@Column(index=6, name="Install", type=SQLDataType.INTEGER)
+	@Column(index=6, name="Version", type=SQLDataType.INTEGER)
+	private int version;
+	@Column(index=7, name="Install", type=SQLDataType.INTEGER)
 	private boolean installed;
-	@Column(index=7, name="Enable", type=SQLDataType.INTEGER)
+	@Column(index=8, name="Enable", type=SQLDataType.INTEGER)
 	private boolean enabled;
-	@Column(index=8, name="Index", type=SQLDataType.INTEGER)
+	@Column(index=9, name="EnableIndex", type=SQLDataType.INTEGER)
 	private int enableIndex;
 	
-	public PluginInfo2() {
+	public PluginInfo() {
 		title = "";
 		apkPath = "";
 		dexPath = "";
 		entryClass = "";
 		icon = new byte[0];
+		version = 1;
 		installed = false;
 		enabled = false;
 		enableIndex = -1;
@@ -92,6 +95,14 @@ public class PluginInfo2 {
 			e.printStackTrace();
 		}
 	}
+	
+	public int getVersion() {
+		return this.version;
+	}
+	
+	public void setVersion(int version) {
+		this.version = version;
+	}
 
 	public boolean isInstalled() {
 		return installed;
@@ -115,6 +126,20 @@ public class PluginInfo2 {
 
 	public void setEnableIndex(int enableIndex) {
 		this.enableIndex = enableIndex;
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("title = ").append(this.title).append("\n");
+		sb.append("apkPath = ").append(this.apkPath).append("\n");
+		sb.append("dexPath = ").append(this.dexPath).append("\n");
+		sb.append("entryClass = ").append(this.entryClass).append("\n");
+		sb.append("version = ").append(this.version).append("\n");
+		sb.append("installed = ").append(this.installed).append("\n");
+		sb.append("enabled = ").append(this.enabled).append("\n");
+		sb.append("enableIndex = ").append(this.enableIndex).append("\n");
+		return sb.toString();
 	}
 	
 }

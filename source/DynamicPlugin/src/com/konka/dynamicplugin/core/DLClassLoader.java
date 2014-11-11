@@ -19,28 +19,25 @@ package com.konka.dynamicplugin.core;
 
 import java.io.File;
 
-import android.content.Context;
 import dalvik.system.DexClassLoader;
 
 public class DLClassLoader extends DexClassLoader {
+	private static final String SYSTEM_DEX_PATH = "/data/misc/konka/plugins/dex";
 
 	protected DLClassLoader(String dexPath, String optimizedDirectory,
 			String libraryPath, ClassLoader parent) {
 		super(dexPath, optimizedDirectory, libraryPath, parent);
 	}
 
-	/**
-	 * return a available classloader which belongs to different apk
-	 */
-	public static DexClassLoader createClassLoader(String apkPath, Context context,
-			ClassLoader parentLoader) {
-		File dexOutputDir = context.getDir("dex", Context.MODE_PRIVATE);
-		final String dexOutputPath = dexOutputDir.getAbsolutePath();
-		return new DLClassLoader(apkPath, dexOutputPath, null, parentLoader);
-	}
-
 	public static DLClassLoader getExistClassLoader(String apkPath, String dexPath,
 			ClassLoader parent) {
-		return new DLClassLoader(apkPath, dexPath, null, parent);
+		final String dexDirPath;
+		if (!dexPath.isEmpty()) {
+			dexDirPath = dexPath.substring(0,
+					dexPath.lastIndexOf(File.separator) + 1);
+		} else {
+			dexDirPath = SYSTEM_DEX_PATH;
+		}
+		return new DLClassLoader(apkPath, dexDirPath, null, parent);
 	}
 }
