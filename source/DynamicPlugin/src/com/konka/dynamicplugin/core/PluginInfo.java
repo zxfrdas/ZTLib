@@ -13,7 +13,7 @@ import com.zt.lib.database.Database;
 import com.zt.lib.database.SQLDataType;
 import com.zt.lib.database.Table;
 
-@Database(name = "plugin.db", version = 1)
+@Database(name = "plugin.db", version = 2)
 @Table(name="plugins")
 public class PluginInfo {
 	@Column(index=1, name="Title", type=SQLDataType.TEXT)

@@ -3,9 +3,12 @@ package com.konka.dynamicplugin.core;
 import java.io.File;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.res.AssetManager;
 import android.content.res.Resources;
 import android.content.res.Resources.Theme;
@@ -20,10 +23,12 @@ import com.zt.lib.database.condition.Condition;
 import com.zt.lib.database.dao.IDAO;
 
 /**
- * 插件管理类。提供插件的安装/卸载/更新，启用/禁用，获取视图等操作方法。 
- * 插件的基本生命周期为：未安装->已安装->未启用->已启动->被宿主获取并显示。
+ * 插件管理类。提供插件的安装/卸载/更新，启用/禁用，获取视图等操作方法。
+ * 插件的基本生命周期为：未记录->未安装->已安装->未启用->已启动->被宿主获取并显示。
  * <p>
- * 未安装：指插件APK存在于插件目录下。
+ * 未记录：指插件APK存在于插件目录下，没有添加进宿主的插件数据库。
+ * <p>
+ * 未安装：指插件APK存在于插件目录下，已经添加进插件数据库。
  * <p>
  * 已安装：指插件APK已经被导出了对应dex文件。
  * <p>
@@ -31,8 +36,7 @@ import com.zt.lib.database.dao.IDAO;
  * <p>
  * 已启动：指已安装并且标记为启用的插件。宿主UI应当获取其视图显示。
  * <p>
- * 一个标准的流程为：应用感知到新（或新版本）插件到来，用户选择安装，之后选择启用。
- * 当下次宿主页面呈现出来时，此新插件提供的视图应该显示在宿主页面中。
+ * 一个标准的流程为：应用感知到新（或新版本）插件到来，用户选择安装、启用。 当下次宿主页面呈现出来时，此新插件提供的视图应该显示在宿主页面中。
  */
 public final class PluginManager {
 	private static final String TAG = PluginManager.class.getSimpleName();
@@ -75,16 +79,51 @@ public final class PluginManager {
 	 */
 	public void initPlugins(Context context) {
 		final Context cxt = context.getApplicationContext();
+		final File apkDir = checkStoragePathExist(cxt);
 		if (!pluginDatabaseExist(cxt)) {
 			Log.d(TAG, "plugin Database is Empty");
-			File[] apks = checkStoragePathExist(cxt);
+			File[] apks = apkDir.listFiles();
 			Log.d(TAG, "get plugin apks from defalut path");
 			for (File f : apks) {
 				Log.d(TAG, f.getAbsolutePath());
 			}
 			savePluginsInfo(cxt, apks);
 			Log.d(TAG, "save plugins info done");
+		} else {
+			// check plugin dir last modify time
+			final long dirLastModify = apkDir.lastModified();
+			final long recLastModify = getRecordedLastModify(context);
+			final long gap = 1 * 60 * 1000; // 1 minute
+			if (dirLastModify - recLastModify >= gap) {
+				// plugin dir newer then recorded, means there has changed
+				// check to know whether there has new plugin or lost
+				final List<PluginInfo> existPlugins = parseAllExistPluginsInfo(cxt,
+						apkDir.listFiles());
+				final List<PluginInfo> recordedPlugins = getAllRecordedPlugins();
+				final List<PluginInfo> recordedAndExist = findIntersection(
+						recordedPlugins, existPlugins);
+				if (recordedAndExist.isEmpty()) {
+					// delete all recorded and uninstall, insert new
+					for (PluginInfo info : recordedPlugins) {
+						uninstallPlugin(cxt, info);
+					}
+					mPluginDB.insert(existPlugins);
+				} else if (recordedAndExist.size() != recordedPlugins.size()) {
+					// delete not exist
+					if (recordedPlugins.removeAll(recordedAndExist)) {
+						deleteFromRecord(recordedPlugins);
+					}
+					// insert not record
+					if (existPlugins.removeAll(recordedAndExist)) {
+						insertIntoRecord(existPlugins);
+					}
+				} else {
+					// update all
+					updateRecorded(existPlugins);
+				}
+			}
 		}
+		updateRecordedLastModify(context, apkDir.lastModified());
 	}
 
 	private boolean pluginDatabaseExist(Context context) {
@@ -95,24 +134,29 @@ public final class PluginManager {
 		return true;
 	}
 
-	private File[] checkStoragePathExist(Context context) {
+	private File checkStoragePathExist(Context context) {
 		File systemPluginPath = new File(SYSTEM_PLUGIN_PATH);
 		if (systemPluginPath.exists()) {
-			return systemPluginPath.listFiles();
+			return systemPluginPath;
 		} else {
 			File localPluginPath = context.getDir("plugins", Context.MODE_PRIVATE);
-			return localPluginPath.listFiles();
+			return localPluginPath;
 		}
 	}
 
 	private void savePluginsInfo(Context context, File[] apks) {
+		List<PluginInfo> pluginInfos = parseAllExistPluginsInfo(context, apks);
+		mPluginDB.insert(pluginInfos);
+	}
+
+	private List<PluginInfo> parseAllExistPluginsInfo(Context context, File[] apks) {
 		List<PluginInfo> pluginInfos = new ArrayList<PluginInfo>(apks.length);
 		for (File apk : apks) {
 			PluginInfo info = parsePluginInfo(context, apk);
 			// add list
 			pluginInfos.add(info);
 		}
-		mPluginDB.insert(pluginInfos);
+		return pluginInfos;
 	}
 
 	private PluginInfo parsePluginInfo(Context context, File apk) {
@@ -136,15 +180,70 @@ public final class PluginManager {
 		// apk icon
 		Drawable icon = DLUtils.getAppIcon(context, apkPath);
 		info.setIcon(icon);
+		// apk version
+		int version = DLUtils.getAppVersion(context, apkPath);
+		info.setVersion(version);
 		return info;
 	}
 
+	private List<PluginInfo> findIntersection(List<PluginInfo> one,
+			List<PluginInfo> another) {
+		List<PluginInfo> result = new ArrayList<PluginInfo>();
+		for (PluginInfo f : another) {
+			final String apkPath = f.getApkPath();
+			for (PluginInfo info : one) {
+				if (apkPath.equals(info.getApkPath())) {
+					result.add(info);
+					break;
+				}
+			}
+		}
+		return result;
+	}
+
+	private void updateRecorded(List<PluginInfo> newRecord) {
+		Map<PluginInfo, Condition> updates = new HashMap<PluginInfo, Condition>();
+		for (PluginInfo info : newRecord) {
+			Condition condition = mPluginDB.buildCondition()
+					.where(PluginInfo2Proxy.apkPath).equal(info.getApkPath())
+					.buildDone();
+			updates.put(info, condition);
+		}
+		mPluginDB.update(updates);
+	}
+
+	private void deleteFromRecord(List<PluginInfo> recordedButNotExist) {
+		List<Condition> conditions = new ArrayList<Condition>();
+		for (PluginInfo info : recordedButNotExist) {
+			conditions.add(mPluginDB.buildCondition()
+					.where(PluginInfo2Proxy.apkPath).equal(info.getApkPath())
+					.buildDone());
+		}
+		mPluginDB.delete(conditions);
+	}
+
+	private void insertIntoRecord(List<PluginInfo> existButNotRecorded) {
+		mPluginDB.insert(existButNotRecorded);
+	}
+
+	private long getRecordedLastModify(Context context) {
+		SharedPreferences sp = context.getSharedPreferences("modifyrecorder",
+				Context.MODE_PRIVATE);
+		return sp.getLong("lastModify", 0);
+	}
+
+	private void updateRecordedLastModify(Context context, long lastModified) {
+		SharedPreferences sp = context.getSharedPreferences("modifyrecorder",
+				Context.MODE_PRIVATE);
+		sp.edit().putLong("lastModify", lastModified).apply();
+	}
+
 	/**
-	 * 获取目前插件目录下所有存在的插件，不论是否安装、是否启用。
+	 * 获取目前被记录的所有插件，不论是否安装、是否启用。
 	 * 
-	 * @return 所有插件APK信息。无则返回空列表。
+	 * @return 所有已被记录的插件APK信息。无则返回空列表。
 	 */
-	public List<PluginInfo> getAllExistPlugins() {
+	public List<PluginInfo> getAllRecordedPlugins() {
 		return mPluginDB.queryAll();
 	}
 
@@ -157,6 +256,10 @@ public final class PluginManager {
 	 *            指定插件的插件信息
 	 */
 	public void installPlugin(Context context, PluginInfo pluginInfo) {
+		if (pluginInfo.isInstalled()) {
+			Log.d(TAG, "already installed!");
+			return;
+		}
 		final String apkPath = pluginInfo.getApkPath();
 		final String dexPath = pluginInfo.getDexPath();
 		// query database
@@ -164,8 +267,17 @@ public final class PluginManager {
 				.where(PluginInfo2Proxy.apkPath).equal(apkPath).buildDone();
 		List<PluginInfo> info = mPluginDB.query(whereApkPath);
 		if (!info.isEmpty() && info.get(0).isInstalled()) {
-			// already installed, do nothing
-			// TODO-check is need update?
+			// check for update
+			PluginInfo recorded = info.get(0);
+			final int recordAppVersion = recorded.getVersion();
+			int currentAppVersion = pluginInfo.getVersion();
+			if (currentAppVersion > recordAppVersion) {
+				new File(pluginInfo.getDexPath()).delete();
+				pluginInfo.setEnabled(recorded.isEnabled());
+				pluginInfo.setEnableIndex(recorded.getEnableIndex());
+				mPluginDB.update(pluginInfo, whereApkPath);
+				installPlugin(context, pluginInfo);
+			}
 		} else {
 			// install the apk, output dex
 			mResController.installClassLoader(apkPath, dexPath);
@@ -180,6 +292,38 @@ public final class PluginManager {
 				plugin.setInstalled(true);
 				mPluginDB.update(plugin, whereApkPath);
 			}
+		}
+	}
+
+	/**
+	 * 卸载指定插件
+	 * 
+	 * @param context
+	 *            {@code getApplicationContext()}即可
+	 * @param pluginInfo
+	 *            指定插件的插件信息
+	 */
+	public void uninstallPlugin(Context context, PluginInfo pluginInfo) {
+		if (!pluginInfo.isInstalled()) {
+			Log.d(TAG, "already uninstall !");
+			return;
+		}
+		final String apkPath = pluginInfo.getApkPath();
+		final String dexPath = pluginInfo.getDexPath();
+		// query database
+		Condition whereApkPath = mPluginDB.buildCondition()
+				.where(PluginInfo2Proxy.apkPath).equal(apkPath).buildDone();
+		List<PluginInfo> info = mPluginDB.query(whereApkPath);
+		if (!info.isEmpty() && info.get(0).isInstalled()) {
+			// uninstall
+			new File(dexPath).delete();
+			// reset info
+			PluginInfo plugin = info.get(0);
+			plugin.setInstalled(false);
+			plugin.setEnabled(false);
+			plugin.setEnableIndex(-1);
+			plugin.setVersion(1);
+			mPluginDB.update(plugin, whereApkPath);
 		}
 	}
 
@@ -211,7 +355,8 @@ public final class PluginManager {
 	/**
 	 * 启用指定插件
 	 * 
-	 * @param plugin 指定插件的信息
+	 * @param plugin
+	 *            指定插件的信息
 	 */
 	public void enablePlugin(PluginInfo plugin) {
 		Condition whereApkPath = mPluginDB.buildCondition()
@@ -240,7 +385,8 @@ public final class PluginManager {
 	/**
 	 * 禁用指定插件
 	 * 
-	 * @param plugin 指定插件的信息
+	 * @param plugin
+	 *            指定插件的信息
 	 */
 	public void disablePlugin(PluginInfo plugin) {
 		Condition whereApkPath = mPluginDB.buildCondition()
@@ -265,8 +411,10 @@ public final class PluginManager {
 	/**
 	 * 获取指定插件提供的视图
 	 * 
-	 * @param context {@code getHostContext()}
-	 * @param pluginInfo 指定插件的信息 
+	 * @param context
+	 *            {@code getHostContext()}
+	 * @param pluginInfo
+	 *            指定插件的信息
 	 * @return {@code View} 指定插件提供的视图。如果插件APK未根据要求实现，则返回{@code null}
 	 */
 	public View getPluginView(Context context, PluginInfo pluginInfo) {

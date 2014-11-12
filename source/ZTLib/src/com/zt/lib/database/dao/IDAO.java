@@ -35,6 +35,15 @@ public interface IDAO<T> {
 	 * @return 成功返回{@code true}，反之{@code false}
 	 */
 	boolean delete(Condition condition);
+	
+	/**
+	 * 数据库多条删除操作。 
+	 * 
+	 * @param conditions
+	 *            操作的条件
+	 * @return 成功返回{@code true}，反之{@code false}
+	 */
+	boolean delete(Collection<Condition> conditions);
 
 	/**
 	 * 数据库表删除所有条目操作

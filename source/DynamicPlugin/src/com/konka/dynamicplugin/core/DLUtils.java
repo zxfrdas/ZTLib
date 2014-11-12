@@ -53,6 +53,16 @@ public class DLUtils {
         ApplicationInfo appInfo = addSourceDir(apkFilepath, pkgInfo);
         return appInfo.loadDescription(pm);
     }
+    
+    public static int getAppVersion(Context context, String apkFilepath) {
+        PackageManager pm = context.getPackageManager();
+        PackageInfo pkgInfo = getPackageInfo(context, apkFilepath);
+        if (pkgInfo == null) {
+            return 1;
+        }
+        ApplicationInfo appInfo = addSourceDir(apkFilepath, pkgInfo);
+        return pkgInfo.versionCode;
+    }
 
     // Workaround for http://code.google.com/p/android/issues/detail?id=9151
 	private static ApplicationInfo addSourceDir(String apkFilepath,

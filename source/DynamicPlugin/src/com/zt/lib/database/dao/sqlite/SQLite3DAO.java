@@ -128,6 +128,29 @@ public abstract class SQLite3DAO<T> implements IDAO<T> {
 	}
 
 	@Override
+	public boolean delete(Collection<Condition> conditions) {
+		long ret = 0;
+		mWriteLock.lock();
+		mDatabase.beginTransaction();
+		try {
+			for (Condition condition : conditions){
+				ret = mDatabase.delete(tableName, condition.getSelection(),
+						condition.getSelectionArgs());
+			}
+			mDatabase.setTransactionSuccessful();
+		} catch (SQLiteException e) {
+			e.printStackTrace();
+		} finally {
+			mDatabase.endTransaction();
+			mWriteLock.unlock();
+		}
+		if (0 != ret) {
+			return true;
+		}
+		return false;
+	}
+
+	@Override
 	public boolean deleteAll() {
 		long ret = 0;
 		mWriteLock.lock();
@@ -180,7 +203,7 @@ public abstract class SQLite3DAO<T> implements IDAO<T> {
 				ret = mDatabase.update(tableName, value, condition.getSelection(),
 						condition.getSelectionArgs());
 			}
-			mDatabase.endTransaction();
+			mDatabase.setTransactionSuccessful();
 		} catch (SQLiteException e) {
 			e.printStackTrace();
 			ret = -1;
@@ -210,7 +233,7 @@ public abstract class SQLite3DAO<T> implements IDAO<T> {
 				ret = mDatabase.update(tableName, value.getKey(), value.getValue()
 						.getSelection(), value.getValue().getSelectionArgs());
 			}
-			mDatabase.endTransaction();
+			mDatabase.setTransactionSuccessful();
 		} catch (SQLiteException e) {
 			e.printStackTrace();
 			ret = -1;

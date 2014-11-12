@@ -16,7 +16,7 @@ public class PluginInfo2Proxy implements IBeanProxy {
 	public static final String title = "Title";
 	public static final String version = "Version";
 	private static final String DATABASE_NAME = "plugin.db";
-	private static final int VERSION = 1;
+	private static final int VERSION = 2;
 	private static final String TABLE = "plugins";
 	private static final String TABLE_CREATOR = "create table plugins(_id integer primary key autoincrement, Title TEXT, ApkPath TEXT, DexPath TEXT, EntryClass TEXT, Icon BLOB, Version INTEGER, Install INTEGER, Enable INTEGER, EnableIndex INTEGER);";
 
