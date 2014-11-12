@@ -20,7 +20,6 @@ public class DLUtils {
             // should be something wrong with parse
             e.printStackTrace();
         }
-
         return pkgInfo;
     }
 
@@ -55,12 +54,12 @@ public class DLUtils {
     }
     
     public static int getAppVersion(Context context, String apkFilepath) {
-        PackageManager pm = context.getPackageManager();
+//        PackageManager pm = context.getPackageManager();
         PackageInfo pkgInfo = getPackageInfo(context, apkFilepath);
         if (pkgInfo == null) {
             return 1;
         }
-        ApplicationInfo appInfo = addSourceDir(apkFilepath, pkgInfo);
+//        ApplicationInfo appInfo = addSourceDir(apkFilepath, pkgInfo);
         return pkgInfo.versionCode;
     }
 

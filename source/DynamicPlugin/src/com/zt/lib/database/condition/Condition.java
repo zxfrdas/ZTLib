@@ -37,11 +37,11 @@ public class Condition {
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
-		sb.append("where = ").append(getSelection()).append(", ");
+		sb.append("where ").append(getSelection()).append(" ");
 		for (String arg : getSelectionArgs()) {
-			sb.append("args = ").append(arg).append(" ");
+			sb.append(arg).append(" ");
 		}
-		sb.append(", orderby = ").append(orderBy);
+		sb.append(" orderby = ").append(orderBy);
 		return sb.toString();
 	}
 	

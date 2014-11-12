@@ -93,10 +93,11 @@ public final class PluginManager {
 			// check plugin dir last modify time
 			final long dirLastModify = apkDir.lastModified();
 			final long recLastModify = getRecordedLastModify(context);
-			final long gap = 1 * 60 * 1000; // 1 minute
+			final long gap = 10 * 1000; // 10s
 			if (dirLastModify - recLastModify >= gap) {
 				// plugin dir newer then recorded, means there has changed
 				// check to know whether there has new plugin or lost
+				Log.d(TAG, "plugin dir has been modified");
 				final List<PluginInfo> existPlugins = parseAllExistPluginsInfo(cxt,
 						apkDir.listFiles());
 				final List<PluginInfo> recordedPlugins = getAllRecordedPlugins();
@@ -105,8 +106,12 @@ public final class PluginManager {
 				if (recordedAndExist.isEmpty()) {
 					// delete all recorded and uninstall, insert new
 					for (PluginInfo info : recordedPlugins) {
-						uninstallPlugin(cxt, info);
+						Log.d(TAG,
+								"delete outdate recorded plugin = "
+										+ info.getApkPath());
+						new File(info.getApkPath()).delete();
 					}
+					mPluginDB.deleteAll();
 					mPluginDB.insert(existPlugins);
 				} else if (recordedAndExist.size() != recordedPlugins.size()) {
 					// delete not exist
@@ -202,27 +207,35 @@ public final class PluginManager {
 	}
 
 	private void updateRecorded(List<PluginInfo> newRecord) {
+		Log.d(TAG, "updateRecorded");
 		Map<PluginInfo, Condition> updates = new HashMap<PluginInfo, Condition>();
 		for (PluginInfo info : newRecord) {
 			Condition condition = mPluginDB.buildCondition()
 					.where(PluginInfo2Proxy.apkPath).equal(info.getApkPath())
 					.buildDone();
 			updates.put(info, condition);
+			Log.d(TAG, "updateRecorded, condition = " + condition);
 		}
 		mPluginDB.update(updates);
 	}
 
 	private void deleteFromRecord(List<PluginInfo> recordedButNotExist) {
+		Log.d(TAG, "deleteFromRecord");
 		List<Condition> conditions = new ArrayList<Condition>();
 		for (PluginInfo info : recordedButNotExist) {
-			conditions.add(mPluginDB.buildCondition()
-					.where(PluginInfo2Proxy.apkPath).equal(info.getApkPath())
-					.buildDone());
+			Condition c = mPluginDB.buildCondition().where(PluginInfo2Proxy.apkPath)
+					.equal(info.getApkPath()).buildDone();
+			conditions.add(c);
+			Log.d(TAG, "deleteFromRecord, condition = " + c);
 		}
 		mPluginDB.delete(conditions);
 	}
 
 	private void insertIntoRecord(List<PluginInfo> existButNotRecorded) {
+		Log.d(TAG, "insertIntoRecord");
+		for (PluginInfo info : existButNotRecorded) {
+			Log.d(TAG, "insertIntoRecord, plugin = " + info.getApkPath());
+		}
 		mPluginDB.insert(existButNotRecorded);
 	}
 

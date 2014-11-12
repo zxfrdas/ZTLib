@@ -141,5 +141,13 @@ public class PluginInfo {
 		sb.append("enableIndex = ").append(this.enableIndex).append("\n");
 		return sb.toString();
 	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (o instanceof PluginInfo) {
+			return ((PluginInfo) o).getApkPath().equals(this.apkPath);
+		}
+		return super.equals(o);
+	}
 	
 }
