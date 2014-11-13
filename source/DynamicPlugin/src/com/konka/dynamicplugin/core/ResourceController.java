@@ -8,7 +8,14 @@ import android.content.res.AssetManager;
 import android.content.res.Resources;
 import android.content.res.Resources.Theme;
 
-
+/**
+ * 控制插件/宿主的{@code AssetManager},{@code Resources},{@code Theme},
+ * {@code ClassLoader}四个基本资源类动态切换
+ * @see AssetManager
+ * @see Resources
+ * @see Theme
+ * @see ClassLoader
+ */
 public final class ResourceController {
 	private Dependence mDependence;
 	private Map<String, AssetManager> mAssetMap;
