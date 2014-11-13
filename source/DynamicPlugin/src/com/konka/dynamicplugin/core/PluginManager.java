@@ -3,12 +3,9 @@ package com.konka.dynamicplugin.core;
 import java.io.File;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.content.res.AssetManager;
 import android.content.res.Resources;
 import android.content.res.Resources.Theme;
@@ -16,6 +13,7 @@ import android.graphics.drawable.Drawable;
 import android.util.Log;
 import android.view.View;
 
+import com.konka.dynamicplugin.core.tools.DLUtils;
 import com.konka.dynamicplugin.database.PluginInfo2DAO;
 import com.konka.dynamicplugin.database.PluginInfo2Proxy;
 import com.konka.dynamicplugin.plugin.IPlugin;
@@ -40,9 +38,9 @@ import com.zt.lib.database.dao.IDAO;
  */
 public final class PluginManager {
 	private static final String TAG = PluginManager.class.getSimpleName();
-	private static final String SYSTEM_PLUGIN_PATH = "/data/misc/konka/plugins/plugin";
 	private IDAO<PluginInfo> mPluginDB;
 	private ResourceController mResController;
+	private LocalPluginChecker mChecker;
 
 	private static class InstanceHolder {
 		private static PluginManager sInstance = new PluginManager();
@@ -53,6 +51,7 @@ public final class PluginManager {
 	}
 
 	private PluginManager() {
+		mChecker = LocalPluginChecker.getInstance();
 	}
 
 	/**
@@ -78,80 +77,17 @@ public final class PluginManager {
 	 *            {@code getApplicationContext()}即可
 	 */
 	public void initPlugins(Context context) {
-		final Context cxt = context.getApplicationContext();
-		final File apkDir = checkStoragePathExist(cxt);
-		if (!pluginDatabaseExist(cxt)) {
-			Log.d(TAG, "plugin Database is Empty");
-			File[] apks = apkDir.listFiles();
-			Log.d(TAG, "get plugin apks from defalut path");
-			for (File f : apks) {
-				Log.d(TAG, f.getAbsolutePath());
-			}
-			savePluginsInfo(cxt, apks);
-			Log.d(TAG, "save plugins info done");
-		} else {
-			// check plugin dir last modify time
-			final long dirLastModify = apkDir.lastModified();
-			final long recLastModify = getRecordedLastModify(context);
-			final long gap = 10 * 1000; // 10s
-			if (dirLastModify - recLastModify >= gap) {
-				// plugin dir newer then recorded, means there has changed
-				// check to know whether there has new plugin or lost
-				Log.d(TAG, "plugin dir has been modified");
-				final List<PluginInfo> existPlugins = parseAllExistPluginsInfo(cxt,
-						apkDir.listFiles());
-				final List<PluginInfo> recordedPlugins = getAllRecordedPlugins();
-				final List<PluginInfo> recordedAndExist = findIntersection(
-						recordedPlugins, existPlugins);
-				if (recordedAndExist.isEmpty()) {
-					// delete all recorded and uninstall, insert new
-					for (PluginInfo info : recordedPlugins) {
-						Log.d(TAG,
-								"delete outdate recorded plugin = "
-										+ info.getApkPath());
-						new File(info.getApkPath()).delete();
-					}
-					mPluginDB.deleteAll();
-					mPluginDB.insert(existPlugins);
-				} else if (recordedAndExist.size() != recordedPlugins.size()) {
-					// delete not exist
-					if (recordedPlugins.removeAll(recordedAndExist)) {
-						deleteFromRecord(recordedPlugins);
-					}
-					// insert not record
-					if (existPlugins.removeAll(recordedAndExist)) {
-						insertIntoRecord(existPlugins);
-					}
-				} else {
-					// update all
-					updateRecorded(existPlugins);
-				}
-			}
-		}
-		updateRecordedLastModify(context, apkDir.lastModified());
-	}
-
-	private boolean pluginDatabaseExist(Context context) {
 		mPluginDB = PluginInfo2DAO.getInstance(context);
-		if (0 == mPluginDB.getCount()) {
-			return false;
+		mChecker.initChecker(context);
+		final List<PluginInfo> existPlugins = parseAllExistPluginsInfo(context,
+				mChecker.getLocalExistPlugins());
+		if (mChecker.isRecordEmpty()) {
+			mChecker.syncExistPluginToRecorded(context, existPlugins, null);
+		} else if (mChecker.isNeedSync(context)) {
+			Log.d(TAG, "plugin dir has been modified");
+			final List<PluginInfo> recordedPlugins = getAllRecordedPlugins();
+			mChecker.syncExistPluginToRecorded(context, existPlugins, recordedPlugins);
 		}
-		return true;
-	}
-
-	private File checkStoragePathExist(Context context) {
-		File systemPluginPath = new File(SYSTEM_PLUGIN_PATH);
-		if (systemPluginPath.exists()) {
-			return systemPluginPath;
-		} else {
-			File localPluginPath = context.getDir("plugins", Context.MODE_PRIVATE);
-			return localPluginPath;
-		}
-	}
-
-	private void savePluginsInfo(Context context, File[] apks) {
-		List<PluginInfo> pluginInfos = parseAllExistPluginsInfo(context, apks);
-		mPluginDB.insert(pluginInfos);
 	}
 
 	private List<PluginInfo> parseAllExistPluginsInfo(Context context, File[] apks) {
@@ -191,66 +127,6 @@ public final class PluginManager {
 		return info;
 	}
 
-	private List<PluginInfo> findIntersection(List<PluginInfo> one,
-			List<PluginInfo> another) {
-		List<PluginInfo> result = new ArrayList<PluginInfo>();
-		for (PluginInfo f : another) {
-			final String apkPath = f.getApkPath();
-			for (PluginInfo info : one) {
-				if (apkPath.equals(info.getApkPath())) {
-					result.add(info);
-					break;
-				}
-			}
-		}
-		return result;
-	}
-
-	private void updateRecorded(List<PluginInfo> newRecord) {
-		Log.d(TAG, "updateRecorded");
-		Map<PluginInfo, Condition> updates = new HashMap<PluginInfo, Condition>();
-		for (PluginInfo info : newRecord) {
-			Condition condition = mPluginDB.buildCondition()
-					.where(PluginInfo2Proxy.apkPath).equal(info.getApkPath())
-					.buildDone();
-			updates.put(info, condition);
-			Log.d(TAG, "updateRecorded, condition = " + condition);
-		}
-		mPluginDB.update(updates);
-	}
-
-	private void deleteFromRecord(List<PluginInfo> recordedButNotExist) {
-		Log.d(TAG, "deleteFromRecord");
-		List<Condition> conditions = new ArrayList<Condition>();
-		for (PluginInfo info : recordedButNotExist) {
-			Condition c = mPluginDB.buildCondition().where(PluginInfo2Proxy.apkPath)
-					.equal(info.getApkPath()).buildDone();
-			conditions.add(c);
-			Log.d(TAG, "deleteFromRecord, condition = " + c);
-		}
-		mPluginDB.delete(conditions);
-	}
-
-	private void insertIntoRecord(List<PluginInfo> existButNotRecorded) {
-		Log.d(TAG, "insertIntoRecord");
-		for (PluginInfo info : existButNotRecorded) {
-			Log.d(TAG, "insertIntoRecord, plugin = " + info.getApkPath());
-		}
-		mPluginDB.insert(existButNotRecorded);
-	}
-
-	private long getRecordedLastModify(Context context) {
-		SharedPreferences sp = context.getSharedPreferences("modifyrecorder",
-				Context.MODE_PRIVATE);
-		return sp.getLong("lastModify", 0);
-	}
-
-	private void updateRecordedLastModify(Context context, long lastModified) {
-		SharedPreferences sp = context.getSharedPreferences("modifyrecorder",
-				Context.MODE_PRIVATE);
-		sp.edit().putLong("lastModify", lastModified).apply();
-	}
-
 	/**
 	 * 获取目前被记录的所有插件，不论是否安装、是否启用。
 	 * 
@@ -286,6 +162,7 @@ public final class PluginManager {
 			int currentAppVersion = pluginInfo.getVersion();
 			if (currentAppVersion > recordAppVersion) {
 				new File(pluginInfo.getDexPath()).delete();
+				// 需要升级重新安装，不过依然记忆enable的状态
 				pluginInfo.setEnabled(recorded.isEnabled());
 				pluginInfo.setEnableIndex(recorded.getEnableIndex());
 				mPluginDB.update(pluginInfo, whereApkPath);
@@ -299,11 +176,11 @@ public final class PluginManager {
 				// new apk, preInstall it
 				plugin = parsePluginInfo(context, new File(apkPath));
 				plugin.setInstalled(true);
-				mPluginDB.insert(plugin);
+				mChecker.addRecord(context, plugin);
 			} else {
 				plugin = info.get(0);
 				plugin.setInstalled(true);
-				mPluginDB.update(plugin, whereApkPath);
+				mChecker.updateRecord(context, plugin);
 			}
 		}
 	}
