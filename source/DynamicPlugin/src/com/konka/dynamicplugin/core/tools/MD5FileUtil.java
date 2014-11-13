@@ -2,6 +2,7 @@ package com.konka.dynamicplugin.core.tools;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
@@ -23,14 +24,25 @@ public class MD5FileUtil {
 	}
 
 	public static String getFileMD5String(File file) {
+		FileInputStream in = null;
 		try {
-			FileInputStream in = new FileInputStream(file);
+			try {
+				in = new FileInputStream(file);
+			} catch (FileNotFoundException e1) {
+				e1.printStackTrace();
+			}
 			FileChannel ch = in.getChannel();
 			MappedByteBuffer byteBuffer = ch.map(FileChannel.MapMode.READ_ONLY, 0,
 					file.length());
 			messagedigest.update(byteBuffer);
 		} catch (IOException e) {
 			e.printStackTrace();
+		} finally {
+			if (null != in) {
+				try {
+					in.close();
+				} catch (IOException e) {}
+			}
 		}
 		return bufferToHex(messagedigest.digest());
 	}
