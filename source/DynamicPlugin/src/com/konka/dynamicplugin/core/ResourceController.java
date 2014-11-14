@@ -17,6 +17,7 @@ import android.content.res.Resources.Theme;
  * @see ClassLoader
  */
 public final class ResourceController {
+	private static final String TAG = PluginManager.class.getSimpleName();
 	private Dependence mDependence;
 	private Map<String, AssetManager> mAssetMap;
 	private Map<String, Resources> mResourcesMap;
@@ -59,8 +60,11 @@ public final class ResourceController {
 			final String apkPath = pluginInfo.getApkPath();
 			final String dexPath = pluginInfo.getDexPath();
 			// classloader
-			mClassLoaderMap.put(apkPath, DLClassLoader.getExistClassLoader(apkPath,
-					dexPath, getSuperClassLoader()));
+			// TODO- why?不这样做自定义空间会有问题
+			if (null == mClassLoaderMap.get(apkPath)) {
+				mClassLoaderMap.put(apkPath, DLClassLoader.getExistClassLoader(apkPath,
+						dexPath, getSuperClassLoader()));
+			}
 			// asset
 			AssetManager assetManager = AssetManager.class.newInstance();
 			Method addAssetPath = assetManager.getClass().getMethod("addAssetPath",
@@ -76,8 +80,8 @@ public final class ResourceController {
 			theme.setTo(getSuperTheme());
 			mThemeMap.put(apkPath, theme);
 			// set loaded
-			final String entryClass = pluginInfo.getEntryClass();
-			mLoadedPluginMap.put(entryClass, pluginInfo);
+			final String packageName = pluginInfo.getPackageName();
+			mLoadedPluginMap.put(packageName, pluginInfo);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -86,7 +90,8 @@ public final class ResourceController {
 	public void unloadPluginResource(PluginInfo pluginInfo) {
 		final String apkPath = pluginInfo.getApkPath();
 		final String entryClass = pluginInfo.getEntryClass();
-		mClassLoaderMap.remove(apkPath);
+		// TODO-why?不这样做自定义空间会有问题
+		// mClassLoaderMap.remove(apkPath);
 		mAssetMap.remove(apkPath);
 		mResourcesMap.remove(apkPath);
 		mThemeMap.remove(apkPath);
@@ -162,7 +167,12 @@ public final class ResourceController {
 			} else {
 				mainClassName = className;
 			}
-			info = mLoadedPluginMap.get(mainClassName);
+			for (String name : mLoadedPluginMap.keySet()) {
+				if (mainClassName.contains(name)) {
+					info = mLoadedPluginMap.get(name);
+					break;
+				}
+			}
 			if (null != info) {
 				break;
 			}

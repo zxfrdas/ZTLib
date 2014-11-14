@@ -3,11 +3,12 @@ package com.konka.dynamicplugin.host.app;
 import android.app.Application;
 import android.content.Context;
 
+import com.konka.dynamicplugin.core.IPluginManager;
 import com.konka.dynamicplugin.core.PluginManager;
 import com.konka.dynamicplugin.host.IHost;
 
 public abstract class HostApplication extends Application implements IHost {
-	private PluginManager mPluginManager;
+	private IPluginManager mPluginManager;
 
 	@Override
 	public void onCreate() {
@@ -22,7 +23,7 @@ public abstract class HostApplication extends Application implements IHost {
 	abstract public void onAppCreate();
 
 	@Override
-	public final PluginManager getPluginManager() {
+	public final IPluginManager getPluginManager() {
 		return mPluginManager;
 	}
 

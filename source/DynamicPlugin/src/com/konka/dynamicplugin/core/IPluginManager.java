@@ -1,5 +1,6 @@
 package com.konka.dynamicplugin.core;
 
+import java.io.FileNotFoundException;
 import java.util.List;
 
 import android.content.Context;
@@ -10,29 +11,12 @@ import android.view.View;
 
 public interface IPluginManager {
 
-	enum PluginAsyncEvent {
-		INIT,
-		GET_ALL_RECORDED,
-		INSTALL,
-		UNINSTALL,
-		GET_ALL_INSTALLED,
-		ENABLE,
-		DISABLE,
-		GET_ALL_ENABLED,
-	}
-
-	public interface IActionListener {
-		void success(PluginAsyncEvent event);
-
-		void fail(PluginAsyncEvent event, String reason);
-	}
-
 	/**
 	 * 设置操作监听器。如果接口实现为异步操作，则需对此监听器做处理。
 	 * 
 	 * @param listener
 	 */
-	void setActionListener(IActionListener listener);
+	void setActionListener(IPluginAsync.IListener listener);
 
 	/**
 	 * 初始化资源控制器，以便运行中进行动态切换资源
@@ -53,8 +37,9 @@ public interface IPluginManager {
 	 * 
 	 * @param context
 	 *            {@code getApplicationContext()}即可
+	 * @throws FileNotFoundException 
 	 */
-	void initPlugins(Context context);
+	void initPlugins(Context context) throws FileNotFoundException;
 
 	/**
 	 * 获取目前被记录的所有插件，不论是否安装、是否启用。

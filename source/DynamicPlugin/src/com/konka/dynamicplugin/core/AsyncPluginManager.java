@@ -1,5 +1,7 @@
 package com.konka.dynamicplugin.core;
 
+import java.io.FileNotFoundException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -12,12 +14,13 @@ import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
 
+import com.konka.dynamicplugin.core.IPluginAsync.Type;
+
 public class AsyncPluginManager implements IPluginManager {
-	private static final String TAG = PluginManager.class.getSimpleName();
 	private PluginManager mPluginManager;
-	private IActionListener mListener;
+	private IPluginAsync.IListener mListener;
 	private ExecutorService mThread;
-	private Handler mUIHandler;
+	private PostToUI mPost;
 
 	private static class InstanceHolder {
 		private static AsyncPluginManager sInstance = new AsyncPluginManager();
@@ -30,17 +33,73 @@ public class AsyncPluginManager implements IPluginManager {
 	private AsyncPluginManager() {
 		mPluginManager = PluginManager.getInstance();
 		mThread = Executors.newFixedThreadPool(1);
-		mUIHandler = new Handler(Looper.getMainLooper());
+		mPost = new PostToUI();
 	}
 
 	@Override
-	public void setActionListener(IActionListener listener) {
+	public void setActionListener(IPluginAsync.IListener listener) {
 		mListener = listener;
+		mPost.setListener(mListener);
 	}
 
 	@Override
 	public void setResourceController(ResourceController controller) {
 		mPluginManager.setResourceController(controller);
+	}
+
+	private static class Task {
+		public Type type;
+		public List<PluginInfo> changed;
+		public boolean success;
+		public String reason;
+
+		private Task(Type type, List<PluginInfo> changed, boolean success,
+				String reason) {
+			this.type = type;
+			this.changed = changed;
+			this.success = success;
+			this.reason = reason;
+		}
+
+		public static Task success(Type type, List<PluginInfo> changed) {
+			return new Task(type, changed, true, "");
+		}
+
+		public static Task fail(Type type, String reason) {
+			return new Task(type, null, false, reason);
+		}
+
+	}
+
+	private static class PostToUI implements Runnable {
+		private Handler uiHandler;
+		private IPluginAsync.IListener listener;
+		private Task task;
+
+		public PostToUI() {
+			uiHandler = new Handler(Looper.getMainLooper());
+		}
+
+		public void setListener(IPluginAsync.IListener listener) {
+			this.listener = listener;
+		}
+
+		public void post(Task task) {
+			this.task = task;
+			uiHandler.post(this);
+		}
+
+		@Override
+		public void run() {
+			if (null != listener) {
+				if (task.success) {
+					listener.success(task.type, task.changed);
+				} else {
+					listener.fail(task.reason);
+				}
+			}
+		}
+
 	}
 
 	@Override
@@ -50,14 +109,12 @@ public class AsyncPluginManager implements IPluginManager {
 			@Override
 			public void run() {
 				synchronized (mPluginManager) {
-					mPluginManager.initPlugins(context);
-					mUIHandler.post(new Runnable() {
-						
-						@Override
-						public void run() {
-							mListener.success(PluginAsyncEvent.INIT);
-						}
-					});
+					try {
+						mPluginManager.initPlugins(context);
+						mPost.post(Task.success(Type.INIT, null));
+					} catch (FileNotFoundException e) {
+						mPost.post(Task.fail(Type.INIT, e.getMessage()));
+					}
 				}
 			}
 		});
@@ -65,50 +122,82 @@ public class AsyncPluginManager implements IPluginManager {
 
 	@Override
 	public List<PluginInfo> getAllRecordedPlugins() {
-		// TODO Auto-generated method stub
-		return null;
+		return mPluginManager.getAllRecordedPlugins();
 	}
 
 	@Override
-	public void installPlugin(Context context, PluginInfo pluginInfo) {
-		// TODO Auto-generated method stub
+	public void installPlugin(final Context context, final PluginInfo pluginInfo) {
+		mThread.execute(new Runnable() {
 
+			@Override
+			public void run() {
+				synchronized (mPluginManager) {
+					mPluginManager.installPlugin(context, pluginInfo);
+					mPost.post(Task.success(Type.INSTALL, null));
+				}
+			}
+		});
 	}
 
 	@Override
-	public void uninstallPlugin(Context context, PluginInfo pluginInfo) {
-		// TODO Auto-generated method stub
+	public void uninstallPlugin(final Context context, final PluginInfo pluginInfo) {
+		mThread.execute(new Runnable() {
 
+			@Override
+			public void run() {
+				synchronized (mPluginManager) {
+					mPluginManager.uninstallPlugin(context, pluginInfo);
+					mPost.post(Task.success(Type.UNINSTALL, null));
+				}
+			}
+		});
 	}
 
 	@Override
 	public List<PluginInfo> getInstalledPlugins() {
-		// TODO Auto-generated method stub
-		return null;
+		return mPluginManager.getInstalledPlugins();
 	}
 
 	@Override
 	public List<PluginInfo> getEnablePlugins() {
-		// TODO Auto-generated method stub
-		return null;
+		return mPluginManager.getEnablePlugins();
 	}
 
 	@Override
-	public void enablePlugin(PluginInfo plugin) {
-		// TODO Auto-generated method stub
+	public void enablePlugin(final PluginInfo plugin) {
+		mThread.execute(new Runnable() {
 
+			@Override
+			public void run() {
+				synchronized (mPluginManager) {
+					mPluginManager.enablePlugin(plugin);
+					ArrayList<PluginInfo> changed = new ArrayList<PluginInfo>();
+					changed.add(plugin);
+					mPost.post(Task.success(Type.ENABLE, changed));
+				}
+			}
+		});
 	}
 
 	@Override
-	public void disablePlugin(PluginInfo plugin) {
-		// TODO Auto-generated method stub
+	public void disablePlugin(final PluginInfo plugin) {
+		mThread.execute(new Runnable() {
 
+			@Override
+			public void run() {
+				synchronized (mPluginManager) {
+					mPluginManager.disablePlugin(plugin);
+					ArrayList<PluginInfo> changed = new ArrayList<PluginInfo>();
+					changed.add(plugin);
+					mPost.post(Task.success(Type.DISABLE, changed));
+				}
+			}
+		});
 	}
 
 	@Override
 	public View getPluginView(Context context, PluginInfo pluginInfo) {
-		// TODO Auto-generated method stub
-		return null;
+		return mPluginManager.getPluginView(context, pluginInfo);
 	}
 
 	@Override

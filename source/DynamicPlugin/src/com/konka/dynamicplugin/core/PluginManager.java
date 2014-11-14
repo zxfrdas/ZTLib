@@ -1,6 +1,7 @@
 package com.konka.dynamicplugin.core;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.List;
@@ -53,19 +54,19 @@ public final class PluginManager implements IPluginManager {
 	private PluginManager() {
 		mChecker = LocalPluginChecker.getInstance();
 	}
-	
+
 	@Override
-	public void setActionListener(IActionListener listener) {
-		// TODO Auto-generated method stub
+	public void setActionListener(IPluginAsync.IListener listener) {
+		// do nothing
 	}
-	
+
 	@Override
 	public void setResourceController(ResourceController controller) {
 		mResController = controller;
 	}
 
 	@Override
-	public void initPlugins(Context context) {
+	public void initPlugins(Context context) throws FileNotFoundException {
 		mPluginDB = PluginInfo2DAO.getInstance(context);
 		mChecker.initChecker(context);
 		final List<PluginInfo> existPlugins = parseAllExistPluginsInfo(context,
@@ -80,7 +81,8 @@ public final class PluginManager implements IPluginManager {
 		}
 	}
 
-	private List<PluginInfo> parseAllExistPluginsInfo(Context context, File[] apks) {
+	private List<PluginInfo> parseAllExistPluginsInfo(Context context, File[] apks)
+			throws FileNotFoundException {
 		List<PluginInfo> pluginInfos = new ArrayList<PluginInfo>(apks.length);
 		for (File apk : apks) {
 			PluginInfo info = parsePluginInfo(context, apk);
@@ -90,7 +92,8 @@ public final class PluginManager implements IPluginManager {
 		return pluginInfos;
 	}
 
-	private PluginInfo parsePluginInfo(Context context, File apk) {
+	private PluginInfo parsePluginInfo(Context context, File apk)
+			throws FileNotFoundException {
 		PluginInfo info = new PluginInfo();
 		// apk path
 		final String apkPath = apk.getAbsolutePath();
@@ -98,6 +101,10 @@ public final class PluginManager implements IPluginManager {
 		// apk title
 		final String title = DLUtils.getAppLabel(context, apkPath).toString();
 		info.setTitle(title);
+		// apk package name
+		final String packageName = DLUtils.getAppPackageName(context, apkPath)
+				.toString();
+		info.setPackageName(packageName);
 		// apk entry class
 		final String pluginClassName = DLUtils.getAppDescription(context, apkPath)
 				.toString();
@@ -153,7 +160,11 @@ public final class PluginManager implements IPluginManager {
 			PluginInfo plugin = null;
 			if (info.isEmpty()) {
 				// new apk, preInstall it
-				plugin = parsePluginInfo(context, new File(apkPath));
+				try {
+					plugin = parsePluginInfo(context, new File(apkPath));
+				} catch (FileNotFoundException e) {
+					e.printStackTrace();
+				}
 				plugin.setInstalled(true);
 				mChecker.addRecord(context, plugin);
 			} else {

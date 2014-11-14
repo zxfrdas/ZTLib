@@ -1,5 +1,7 @@
 package com.konka.dynamicplugin.core.tools;
 
+import java.io.FileNotFoundException;
+
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
@@ -11,20 +13,17 @@ import android.os.Build;
 
 public class DLUtils {
 
-	public static PackageInfo getPackageInfo(Context context, String apkFilepath) {
+	public static PackageInfo getPackageInfo(Context context, String apkFilepath)
+			throws FileNotFoundException {
 		PackageManager pm = context.getPackageManager();
 		PackageInfo pkgInfo = null;
-		try {
-			pkgInfo = pm.getPackageArchiveInfo(apkFilepath,
-					PackageManager.GET_ACTIVITIES);
-		} catch (Exception e) {
-			// should be something wrong with parse
-			e.printStackTrace();
-		}
+		pkgInfo = pm.getPackageArchiveInfo(apkFilepath,
+				PackageManager.GET_ACTIVITIES);
 		return pkgInfo;
 	}
 
-	public static Drawable getAppIcon(Context context, String apkFilepath) {
+	public static Drawable getAppIcon(Context context, String apkFilepath)
+			throws FileNotFoundException {
 		PackageManager pm = context.getPackageManager();
 		PackageInfo pkgInfo = getPackageInfo(context, apkFilepath);
 		if (pkgInfo == null) {
@@ -34,27 +33,40 @@ public class DLUtils {
 		return pm.getApplicationIcon(appInfo);
 	}
 
-	public static CharSequence getAppLabel(Context context, String apkFilepath) {
+	public static CharSequence getAppLabel(Context context, String apkFilepath)
+			throws FileNotFoundException {
 		PackageManager pm = context.getPackageManager();
 		PackageInfo pkgInfo = getPackageInfo(context, apkFilepath);
 		if (pkgInfo == null) {
-			return null;
+			return "";
 		}
 		ApplicationInfo appInfo = addSourceDir(apkFilepath, pkgInfo);
 		return pm.getApplicationLabel(appInfo);
 	}
 
-	public static CharSequence getAppDescription(Context context, String apkFilepath) {
+	public static CharSequence getAppPackageName(Context context, String apkFilepath)
+			throws FileNotFoundException {
+		PackageInfo pkgInfo = getPackageInfo(context, apkFilepath);
+		if (pkgInfo == null) {
+			return "";
+		}
+		ApplicationInfo appInfo = addSourceDir(apkFilepath, pkgInfo);
+		return appInfo.packageName;
+	}
+
+	public static CharSequence getAppDescription(Context context, String apkFilepath)
+			throws FileNotFoundException {
 		PackageManager pm = context.getPackageManager();
 		PackageInfo pkgInfo = getPackageInfo(context, apkFilepath);
 		if (pkgInfo == null) {
-			return null;
+			return "";
 		}
 		ApplicationInfo appInfo = addSourceDir(apkFilepath, pkgInfo);
 		return appInfo.loadDescription(pm);
 	}
 
-	public static int getAppVersion(Context context, String apkFilepath) {
+	public static int getAppVersion(Context context, String apkFilepath)
+			throws FileNotFoundException {
 		// PackageManager pm = context.getPackageManager();
 		PackageInfo pkgInfo = getPackageInfo(context, apkFilepath);
 		if (pkgInfo == null) {
@@ -79,5 +91,5 @@ public class DLUtils {
 		new AlertDialog.Builder(activity).setTitle(title).setMessage(message)
 				.setPositiveButton("确定", null).show();
 	}
-	
+
 }

@@ -28,13 +28,13 @@ public class MD5FileUtil {
 		try {
 			try {
 				in = new FileInputStream(file);
+				FileChannel ch = in.getChannel();
+				MappedByteBuffer byteBuffer = ch.map(FileChannel.MapMode.READ_ONLY, 0,
+						file.length());
+				messagedigest.update(byteBuffer);
 			} catch (FileNotFoundException e1) {
 				e1.printStackTrace();
 			}
-			FileChannel ch = in.getChannel();
-			MappedByteBuffer byteBuffer = ch.map(FileChannel.MapMode.READ_ONLY, 0,
-					file.length());
-			messagedigest.update(byteBuffer);
 		} catch (IOException e) {
 			e.printStackTrace();
 		} finally {

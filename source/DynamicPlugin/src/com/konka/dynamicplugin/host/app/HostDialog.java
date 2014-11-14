@@ -3,7 +3,7 @@ package com.konka.dynamicplugin.host.app;
 import android.app.Dialog;
 import android.content.Context;
 
-import com.konka.dynamicplugin.core.PluginManager;
+import com.konka.dynamicplugin.core.IPluginManager;
 import com.konka.dynamicplugin.host.IHost;
 
 /**
@@ -28,7 +28,7 @@ public abstract class HostDialog extends Dialog implements IHost {
 	}
 
 	@Override
-	public final PluginManager getPluginManager() {
+	public final IPluginManager getPluginManager() {
 		return mHost.getPluginManager();
 	}
 

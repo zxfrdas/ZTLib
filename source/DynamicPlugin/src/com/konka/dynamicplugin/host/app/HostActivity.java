@@ -7,7 +7,7 @@ import android.content.res.Resources;
 import android.content.res.Resources.Theme;
 import android.os.Bundle;
 
-import com.konka.dynamicplugin.core.PluginManager;
+import com.konka.dynamicplugin.core.IPluginManager;
 import com.konka.dynamicplugin.core.ResourceController;
 import com.konka.dynamicplugin.core.ResourceController.Dependence;
 import com.konka.dynamicplugin.host.IHost;
@@ -50,7 +50,7 @@ public abstract class HostActivity extends Activity implements IHost {
 	}
 
 	@Override
-	public final PluginManager getPluginManager() {
+	public final IPluginManager getPluginManager() {
 		return ((IHost) getApplication()).getPluginManager();
 	}
 

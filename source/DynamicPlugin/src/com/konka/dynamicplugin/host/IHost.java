@@ -2,7 +2,7 @@ package com.konka.dynamicplugin.host;
 
 import android.content.Context;
 
-import com.konka.dynamicplugin.core.PluginManager;
+import com.konka.dynamicplugin.core.IPluginManager;
 
 public interface IHost {
 	/**
@@ -11,7 +11,7 @@ public interface IHost {
 	 * @return 插件管理类
 	 * @see PluginManager
 	 */
-	PluginManager getPluginManager();
+	IPluginManager getPluginManager();
 
 	/**
 	 * 获取宿主的上下文
