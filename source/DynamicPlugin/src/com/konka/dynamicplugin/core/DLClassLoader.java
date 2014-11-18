@@ -29,7 +29,7 @@ public class DLClassLoader extends DexClassLoader {
 		super(dexPath, optimizedDirectory, libraryPath, parent);
 	}
 
-	public static DLClassLoader getExistClassLoader(String apkPath, String dexPath,
+	public static DLClassLoader getClassLoader(String apkPath, String dexPath,
 			ClassLoader parent) {
 		final String dexDirPath;
 		if (!dexPath.isEmpty()) {

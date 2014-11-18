@@ -14,6 +14,7 @@ import android.graphics.drawable.Drawable;
 import android.util.Log;
 import android.view.View;
 
+import com.konka.dynamicplugin.core.ResourceController.Dependence;
 import com.konka.dynamicplugin.core.tools.DLUtils;
 import com.konka.dynamicplugin.database.PluginInfo2DAO;
 import com.konka.dynamicplugin.database.PluginInfo2Proxy;
@@ -61,8 +62,11 @@ public final class PluginManager implements IPluginManager {
 	}
 
 	@Override
-	public void setResourceController(ResourceController controller) {
-		mResController = controller;
+	public void setResourceDependence(Dependence dependence) {
+		if (null == mResController) {
+			mResController = new ResourceController();
+		}
+		mResController.setDependence(dependence);
 	}
 
 	@Override
@@ -131,10 +135,6 @@ public final class PluginManager implements IPluginManager {
 
 	@Override
 	public void installPlugin(Context context, PluginInfo pluginInfo) {
-		if (pluginInfo.isInstalled()) {
-			Log.d(TAG, "already installed!");
-			return;
-		}
 		final String apkPath = pluginInfo.getApkPath();
 		final String dexPath = pluginInfo.getDexPath();
 		// query database
@@ -190,6 +190,7 @@ public final class PluginManager implements IPluginManager {
 		if (!info.isEmpty() && info.get(0).isInstalled()) {
 			// uninstall
 			new File(dexPath).delete();
+			mResController.uninstallClassLoader(apkPath);
 			// reset info
 			PluginInfo plugin = info.get(0);
 			plugin.setInstalled(false);
@@ -304,6 +305,10 @@ public final class PluginManager implements IPluginManager {
 	@Override
 	public ClassLoader getClassLoader() {
 		return (null != mResController) ? mResController.getClassLoader() : null;
+	}
+
+	@Override
+	public void clearup() {
 	}
 
 }

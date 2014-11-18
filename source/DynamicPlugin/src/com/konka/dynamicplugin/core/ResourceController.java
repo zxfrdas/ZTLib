@@ -11,13 +11,13 @@ import android.content.res.Resources.Theme;
 /**
  * 控制插件/宿主的{@code AssetManager},{@code Resources},{@code Theme},
  * {@code ClassLoader}四个基本资源类动态切换
+ * 
  * @see AssetManager
  * @see Resources
  * @see Theme
  * @see ClassLoader
  */
 public final class ResourceController {
-	private static final String TAG = PluginManager.class.getSimpleName();
 	private Dependence mDependence;
 	private Map<String, AssetManager> mAssetMap;
 	private Map<String, Resources> mResourcesMap;
@@ -28,22 +28,21 @@ public final class ResourceController {
 
 	public static final class Dependence {
 		public ClassLoader mSuperClassLoader;
-		public AssetManager mSupAssetManager;
+		public AssetManager mSuperAssetManager;
 		public Resources mSuperResources;
 		public Theme mSuperTheme;
 
 		public Dependence(ClassLoader loader, AssetManager asset, Resources res,
 				Theme theme) {
 			mSuperClassLoader = loader;
-			mSupAssetManager = asset;
+			mSuperAssetManager = asset;
 			mSuperResources = res;
 			mSuperTheme = theme;
 		}
 
 	}
 
-	public ResourceController(Dependence dependence) {
-		mDependence = dependence;
+	public ResourceController() {
 		mClassLoaderMap = new HashMap<String, ClassLoader>();
 		mAssetMap = new HashMap<String, AssetManager>();
 		mResourcesMap = new HashMap<String, Resources>();
@@ -51,19 +50,26 @@ public final class ResourceController {
 		mLoadedPluginMap = new HashMap<String, PluginInfo>();
 	}
 
-	public void installClassLoader(String apkPath, String dexPath) {
-		DLClassLoader.getExistClassLoader(apkPath, dexPath, getSuperClassLoader());
+	public void setDependence(Dependence dependence) {
+		mDependence = dependence;
 	}
 
+	public void installClassLoader(String apkPath, String dexPath) {
+		DLClassLoader.getClassLoader(apkPath, dexPath, getSuperClassLoader());
+	}
+
+	public void uninstallClassLoader(String apkPath) {
+	}
+	
 	public void loadPluginResource(PluginInfo pluginInfo) {
 		try {
 			final String apkPath = pluginInfo.getApkPath();
 			final String dexPath = pluginInfo.getDexPath();
 			// classloader
-			// TODO- why?不这样做自定义空间会有问题
 			if (null == mClassLoaderMap.get(apkPath)) {
-				mClassLoaderMap.put(apkPath, DLClassLoader.getExistClassLoader(apkPath,
-						dexPath, getSuperClassLoader()));
+				ClassLoader cl = DLClassLoader.getClassLoader(apkPath, dexPath,
+						getSuperClassLoader());
+				mClassLoaderMap.put(apkPath, cl);
 			}
 			// asset
 			AssetManager assetManager = AssetManager.class.newInstance();
@@ -90,8 +96,6 @@ public final class ResourceController {
 	public void unloadPluginResource(PluginInfo pluginInfo) {
 		final String apkPath = pluginInfo.getApkPath();
 		final String entryClass = pluginInfo.getEntryClass();
-		// TODO-why?不这样做自定义空间会有问题
-		// mClassLoaderMap.remove(apkPath);
 		mAssetMap.remove(apkPath);
 		mResourcesMap.remove(apkPath);
 		mThemeMap.remove(apkPath);
@@ -127,7 +131,7 @@ public final class ResourceController {
 	}
 
 	private AssetManager getSuperAssets() {
-		return mDependence.mSupAssetManager;
+		return mDependence.mSuperAssetManager;
 	}
 
 	public Resources getResources() {

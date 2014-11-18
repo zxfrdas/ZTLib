@@ -15,9 +15,10 @@ import android.os.Looper;
 import android.view.View;
 
 import com.konka.dynamicplugin.core.IPluginAsync.Type;
+import com.konka.dynamicplugin.core.ResourceController.Dependence;
 
 public class AsyncPluginManager implements IPluginManager {
-	private PluginManager mPluginManager;
+	private IPluginManager mPluginManager;
 	private IPluginAsync.IListener mListener;
 	private ExecutorService mThread;
 	private PostToUI mPost;
@@ -43,8 +44,8 @@ public class AsyncPluginManager implements IPluginManager {
 	}
 
 	@Override
-	public void setResourceController(ResourceController controller) {
-		mPluginManager.setResourceController(controller);
+	public void setResourceDependence(Dependence dependence) {
+		mPluginManager.setResourceDependence(dependence);
 	}
 
 	private static class Task {
@@ -218,6 +219,11 @@ public class AsyncPluginManager implements IPluginManager {
 	@Override
 	public ClassLoader getClassLoader() {
 		return mPluginManager.getClassLoader();
+	}
+
+	@Override
+	public void clearup() {
+		mPluginManager.clearup();
 	}
 
 }

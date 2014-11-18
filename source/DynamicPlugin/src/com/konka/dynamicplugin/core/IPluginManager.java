@@ -3,6 +3,8 @@ package com.konka.dynamicplugin.core;
 import java.io.FileNotFoundException;
 import java.util.List;
 
+import com.konka.dynamicplugin.core.ResourceController.Dependence;
+
 import android.content.Context;
 import android.content.res.AssetManager;
 import android.content.res.Resources;
@@ -24,7 +26,7 @@ public interface IPluginManager {
 	 * @param controller
 	 *            宿主/插件资源控制器
 	 */
-	void setResourceController(ResourceController controller);
+	void setResourceDependence(Dependence dependence);
 
 	/**
 	 * 构建宿主应用的插件数据库。
@@ -138,4 +140,6 @@ public interface IPluginManager {
 	 * @return 未找到则返回{@code null}
 	 */
 	ClassLoader getClassLoader();
+	
+	void clearup();
 }

@@ -2,12 +2,13 @@ package com.konka.dynamicplugin.host.app;
 
 import android.app.Service;
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.AssetManager;
 import android.content.res.Resources;
 import android.content.res.Resources.Theme;
+import android.os.IBinder;
 
 import com.konka.dynamicplugin.core.IPluginManager;
-import com.konka.dynamicplugin.core.ResourceController;
 import com.konka.dynamicplugin.core.ResourceController.Dependence;
 import com.konka.dynamicplugin.host.IHost;
 
@@ -19,9 +20,20 @@ public abstract class HostService extends Service implements IHost {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		getPluginManager().setResourceController(
-				new ResourceController(new Dependence(super.getClassLoader(), super
-						.getAssets(), super.getResources(), super.getTheme())));
+		getPluginManager().setResourceDependence(
+				new Dependence(super.getClassLoader(), super.getAssets(), super
+						.getResources(), super.getTheme()));
+	}
+
+	@Override
+	public void onDestroy() {
+		super.onDestroy();
+	}
+
+	@Override
+	public IBinder onBind(Intent intent) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	@Override
