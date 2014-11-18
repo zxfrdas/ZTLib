@@ -59,6 +59,11 @@ public final class ResourceController {
 	}
 
 	public void uninstallClassLoader(String apkPath) {
+		ClassLoader cl = mClassLoaderMap.get(apkPath);
+		if (null != cl) {
+			mClassLoaderMap.remove(cl);
+			DLClassLoader.removeDexPath(cl);
+		}
 	}
 	
 	public void loadPluginResource(PluginInfo pluginInfo) {
