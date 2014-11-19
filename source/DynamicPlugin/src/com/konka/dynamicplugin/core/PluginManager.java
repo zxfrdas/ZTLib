@@ -14,6 +14,7 @@ import android.graphics.drawable.Drawable;
 import android.util.Log;
 import android.view.View;
 
+import com.konka.dynamicplugin.core.IPluginAsync.Type;
 import com.konka.dynamicplugin.core.ResourceController.Dependence;
 import com.konka.dynamicplugin.core.tools.DLUtils;
 import com.konka.dynamicplugin.database.PluginInfo2DAO;
@@ -43,6 +44,7 @@ public final class PluginManager implements IPluginManager {
 	private IDAO<PluginInfo> mPluginDB;
 	private ResourceController mResController;
 	private LocalPluginChecker mChecker;
+	private IPluginAsync.IListener mListener;
 
 	private static class InstanceHolder {
 		private static PluginManager sInstance = new PluginManager();
@@ -58,7 +60,7 @@ public final class PluginManager implements IPluginManager {
 
 	@Override
 	public void setActionListener(IPluginAsync.IListener listener) {
-		// do nothing
+		mListener = listener;
 	}
 
 	@Override
@@ -171,6 +173,9 @@ public final class PluginManager implements IPluginManager {
 				plugin = info.get(0);
 				plugin.setInstalled(true);
 				mChecker.updateRecord(context, plugin);
+			}
+			if (null != mListener) {
+				mListener.success(Type.INSTALL, null);
 			}
 		}
 	}
