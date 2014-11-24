@@ -1,6 +1,10 @@
 package com.konka.dynamicplugin.core.impl;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -9,6 +13,7 @@ import java.util.Map;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+import android.content.res.AssetManager;
 import android.util.Log;
 
 import com.konka.dynamicplugin.core.PluginInfo;
@@ -37,6 +42,7 @@ public class LocalPluginChecker {
 
 	public void initChecker(Context context) {
 		mLocalPluginPath = checkStoragePathExist(context);
+		releaseDefaultPlugin(context, mLocalPluginPath.getAbsolutePath());
 		mPluginDB = PluginInfo2DAO.getInstance(context);
 	}
 
@@ -50,6 +56,44 @@ public class LocalPluginChecker {
 		}
 	}
 
+	private void releaseDefaultPlugin(Context context, String outPath) {
+		AssetManager assetManager = context.getAssets();
+		String[] files;
+		try {
+			files = assetManager.list("plugins");
+			for (String s : files) {
+				Log.d(TAG, "asset's plugin file = " + s);
+				InputStream is = assetManager.open("plugins/" + s);
+				File f = new File(outPath + File.separator + s);
+				output(is, new FileOutputStream(f));
+				f.setWritable(true, false);
+				f.setReadable(true, false);
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	private void output(InputStream is, OutputStream os) {
+		byte[] buffer = new byte[1024];
+		int count = 0;
+		try {
+			while ((count = is.read(buffer)) > 0) {
+				os.write(buffer, 0, count);
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				os.flush();
+				os.close();
+				is.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
 	public boolean isRecordEmpty() {
 		return (0 == mPluginDB.getCount());
 	}
@@ -59,9 +103,24 @@ public class LocalPluginChecker {
 	}
 
 	public boolean isNeedSync(Context context) {
-		final long dirLastModify = mLocalPluginPath.lastModified();
+		final long lastModify = getFileLastModified(mLocalPluginPath);
 		final long recLastModify = getRecordedLastModify(context);
-		return (dirLastModify - recLastModify >= GAP);
+		return (lastModify - recLastModify >= GAP);
+	}
+	
+	private long getFileLastModified(File f) {
+		if (f.isFile()) {
+			return f.lastModified();
+		} else {
+			// 比较目录下所有文件和目录自身的修改时间，找出最晚的为准。
+			long last = 0;
+			File[] files = f.listFiles();
+			for (File file : files) {
+				last = (file.lastModified() > last) ? file.lastModified() : last;
+			}
+			last = (f.lastModified() > last) ? f.lastModified() : last;
+			return last;
+		}
 	}
 
 	private long getRecordedLastModify(Context context) {
@@ -78,7 +137,7 @@ public class LocalPluginChecker {
 
 	public void syncExistPluginToRecorded(Context context,
 			List<PluginInfo> existPlugins, List<PluginInfo> recordedPlugins) {
-		updateRecordedLastModify(context, mLocalPluginPath.lastModified());
+		updateRecordedLastModify(context, getFileLastModified(mLocalPluginPath));
 		final List<PluginInfo> recordedAndExist = findIntersection(recordedPlugins,
 				existPlugins);
 		final int intersectionCount = recordedAndExist.size();
@@ -95,13 +154,15 @@ public class LocalPluginChecker {
 					// 删除有记录但不存在APK的数据库条目
 					removeRecord(context, recordedPlugins);
 				}
-			} else if (intersectionCount < existCount && intersectionCount == recordCount) {
+			} else if (intersectionCount < existCount
+					&& intersectionCount == recordCount) {
 				Log.d(TAG, "record = intersection < exist");
 				if (existPlugins.removeAll(recordedAndExist)) {
 					// 增加存在APK但没有数据库条目的
 					addRecord(context, existPlugins);
 				}
-			} else if (intersectionCount < existCount && intersectionCount < recordCount) {
+			} else if (intersectionCount < existCount
+					&& intersectionCount < recordCount) {
 				Log.d(TAG, "intersection < exist != record");
 				if (recordedPlugins.removeAll(recordedAndExist)) {
 					removeRecord(context, recordedPlugins);
@@ -161,9 +222,8 @@ public class LocalPluginChecker {
 		Log.d(TAG, "addRecord, plugin = " + plugin.getApkPath());
 		mPluginDB.insert(plugin);
 		updateMD5(context, plugin);
-		updateRecordedLastModify(context, mLocalPluginPath.lastModified());
+		updateRecordedLastModify(context, getFileLastModified(mLocalPluginPath));
 	}
-
 
 	private void updateRecord(Context context, List<PluginInfo> plugins) {
 		Log.d(TAG, "updateRecorded");
@@ -178,7 +238,7 @@ public class LocalPluginChecker {
 		mPluginDB.update(updates);
 		updateMD5(context, plugins);
 	}
-	
+
 	public void updateRecord(Context context, PluginInfo plugin) {
 		Condition condition = mPluginDB.buildCondition()
 				.where(PluginInfo2Proxy.apkPath).equal(plugin.getApkPath())
@@ -186,9 +246,9 @@ public class LocalPluginChecker {
 		Log.d(TAG, "updateRecorded, condition = " + condition);
 		mPluginDB.update(plugin, condition);
 		updateMD5(context, plugin);
-		updateRecordedLastModify(context, mLocalPluginPath.lastModified());
+		updateRecordedLastModify(context, getFileLastModified(mLocalPluginPath));
 	}
-	
+
 	private void updateMD5(Context context, List<PluginInfo> plugins) {
 		SharedPreferences sp = context.getSharedPreferences("modifyrecorder",
 				Context.MODE_PRIVATE);
