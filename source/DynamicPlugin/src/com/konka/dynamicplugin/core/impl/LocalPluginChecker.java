@@ -1,4 +1,4 @@
-package com.konka.dynamicplugin.core;
+package com.konka.dynamicplugin.core.impl;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -11,6 +11,7 @@ import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.util.Log;
 
+import com.konka.dynamicplugin.core.PluginInfo;
 import com.konka.dynamicplugin.core.tools.MD5FileUtil;
 import com.konka.dynamicplugin.database.PluginInfo2DAO;
 import com.konka.dynamicplugin.database.PluginInfo2Proxy;
@@ -243,7 +244,10 @@ public class LocalPluginChecker {
 			Log.d(TAG, "plugin = " + plugin.getApkPath());
 			Log.d(TAG, "record MD5 = " + recordMD5);
 			Log.d(TAG, "now MD5 = " + nowMD5);
-			if (!nowMD5.equals(recordMD5)) {
+			if (nowMD5.equals(recordMD5)) {
+				Log.d(TAG, "MD5 same");
+			} else {
+				Log.d(TAG, "MD5 not same");
 				changed.add(plugin);
 			}
 		}

@@ -9,7 +9,7 @@ import android.content.res.Resources.Theme;
 import android.os.IBinder;
 
 import com.konka.dynamicplugin.core.IPluginManager;
-import com.konka.dynamicplugin.core.ResourceController.Dependence;
+import com.konka.dynamicplugin.core.impl.ResourceController.Dependence;
 import com.konka.dynamicplugin.host.IHost;
 
 /**

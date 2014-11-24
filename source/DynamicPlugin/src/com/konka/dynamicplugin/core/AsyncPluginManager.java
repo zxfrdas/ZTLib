@@ -15,7 +15,8 @@ import android.os.Looper;
 import android.view.View;
 
 import com.konka.dynamicplugin.core.IPluginAsync.Type;
-import com.konka.dynamicplugin.core.ResourceController.Dependence;
+import com.konka.dynamicplugin.core.impl.PluginManager;
+import com.konka.dynamicplugin.core.impl.ResourceController.Dependence;
 
 public class AsyncPluginManager implements IPluginManager {
 	private IPluginManager mPluginManager;
@@ -33,6 +34,7 @@ public class AsyncPluginManager implements IPluginManager {
 
 	private AsyncPluginManager() {
 		mPluginManager = PluginManager.getInstance();
+		mPluginManager.setActionListener(null);
 		mThread = Executors.newFixedThreadPool(1);
 		mPost = new PostToUI();
 	}
@@ -96,7 +98,7 @@ public class AsyncPluginManager implements IPluginManager {
 				if (task.success) {
 					listener.success(task.type, task.changed);
 				} else {
-					listener.fail(task.reason);
+					listener.fail(task.type, task.reason);
 				}
 			}
 		}
@@ -219,11 +221,6 @@ public class AsyncPluginManager implements IPluginManager {
 	@Override
 	public ClassLoader getClassLoader() {
 		return mPluginManager.getClassLoader();
-	}
-
-	@Override
-	public void clearup() {
-		mPluginManager.clearup();
 	}
 
 }

@@ -1,8 +1,7 @@
-package com.konka.dynamicplugin.core;
+package com.konka.dynamicplugin.core.impl;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,8 +13,11 @@ import android.graphics.drawable.Drawable;
 import android.util.Log;
 import android.view.View;
 
+import com.konka.dynamicplugin.core.IPluginAsync;
 import com.konka.dynamicplugin.core.IPluginAsync.Type;
-import com.konka.dynamicplugin.core.ResourceController.Dependence;
+import com.konka.dynamicplugin.core.IPluginManager;
+import com.konka.dynamicplugin.core.PluginInfo;
+import com.konka.dynamicplugin.core.impl.ResourceController.Dependence;
 import com.konka.dynamicplugin.core.tools.DLUtils;
 import com.konka.dynamicplugin.database.PluginInfo2DAO;
 import com.konka.dynamicplugin.database.PluginInfo2Proxy;
@@ -73,11 +75,13 @@ public final class PluginManager implements IPluginManager {
 
 	@Override
 	public void initPlugins(Context context) throws FileNotFoundException {
+		Log.d(TAG, "initPlugins");
 		mPluginDB = PluginInfo2DAO.getInstance(context);
 		mChecker.initChecker(context);
 		final List<PluginInfo> existPlugins = parseAllExistPluginsInfo(context,
 				mChecker.getLocalExistPlugins());
 		if (mChecker.isRecordEmpty()) {
+			Log.d(TAG, "initPlugins, record is empty");
 			mChecker.syncExistPluginToRecorded(context, existPlugins, null);
 		} else if (mChecker.isNeedSync(context)) {
 			Log.d(TAG, "plugin dir has been modified");
@@ -281,9 +285,7 @@ public final class PluginManager implements IPluginManager {
 		try {
 			Class<?> localClass = mResController.getClassLoader().loadClass(
 					pluginInfo.getEntryClass());
-			Constructor<?> localConstructor = localClass
-					.getConstructor(new Class[] {});
-			Object instance = localConstructor.newInstance(new Object[] {});
+			Object instance = localClass.newInstance();
 			plugin = (IPlugin) instance;
 			plugin.setContext(context);
 		} catch (Exception e) {
@@ -310,10 +312,6 @@ public final class PluginManager implements IPluginManager {
 	@Override
 	public ClassLoader getClassLoader() {
 		return (null != mResController) ? mResController.getClassLoader() : null;
-	}
-
-	@Override
-	public void clearup() {
 	}
 
 }

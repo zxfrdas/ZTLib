@@ -1,8 +1,10 @@
-package com.konka.dynamicplugin.core;
+package com.konka.dynamicplugin.core.impl;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
+
+import com.konka.dynamicplugin.core.PluginInfo;
 
 import android.content.res.AssetManager;
 import android.content.res.Resources;
@@ -59,7 +61,7 @@ public final class ResourceController {
 	}
 
 	public void uninstallClassLoader(String apkPath) {
-
+		mClassLoaderMap.remove(apkPath);
 	}
 
 	public void loadPluginResource(PluginInfo pluginInfo) {
@@ -96,11 +98,11 @@ public final class ResourceController {
 
 	public void unloadPluginResource(PluginInfo pluginInfo) {
 		final String apkPath = pluginInfo.getApkPath();
-		final String entryClass = pluginInfo.getEntryClass();
+		final String packageName = pluginInfo.getPackageName();
 		mAssetMap.remove(apkPath);
 		mResourcesMap.remove(apkPath);
 		mThemeMap.remove(apkPath);
-		mLoadedPluginMap.remove(entryClass);
+		mLoadedPluginMap.remove(packageName);
 	}
 
 	public void holdPluginResource(PluginInfo pluginInfo) {
@@ -163,7 +165,7 @@ public final class ResourceController {
 		final StackTraceElement[] elements = Thread.currentThread().getStackTrace();
 		final int size = elements.length;
 		PluginInfo info = null;
-		String mainClassName = "";
+		String mainClassName;
 		for (int i = 0; i < size; i++) {
 			String className = elements[i].getClassName();
 			if (className.contains("$")) {

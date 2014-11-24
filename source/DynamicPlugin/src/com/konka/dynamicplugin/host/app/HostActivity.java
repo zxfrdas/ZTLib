@@ -9,8 +9,8 @@ import android.os.Bundle;
 import android.util.Log;
 
 import com.konka.dynamicplugin.core.IPluginManager;
-import com.konka.dynamicplugin.core.PluginManager;
-import com.konka.dynamicplugin.core.ResourceController.Dependence;
+import com.konka.dynamicplugin.core.impl.PluginManager;
+import com.konka.dynamicplugin.core.impl.ResourceController.Dependence;
 import com.konka.dynamicplugin.host.IHost;
 
 /**

@@ -4,7 +4,7 @@ import android.app.Application;
 import android.content.Context;
 
 import com.konka.dynamicplugin.core.IPluginManager;
-import com.konka.dynamicplugin.core.PluginManager;
+import com.konka.dynamicplugin.core.impl.PluginManager;
 import com.konka.dynamicplugin.host.IHost;
 
 public abstract class HostApplication extends Application implements IHost {

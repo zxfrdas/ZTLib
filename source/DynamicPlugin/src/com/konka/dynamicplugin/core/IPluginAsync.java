@@ -10,7 +10,7 @@ public interface IPluginAsync {
 	
 	interface IListener {
 		void success(Type type, List<PluginInfo> changed);
-		void fail(String reason);
+		void fail(Type type, String reason);
 	}
 
 }

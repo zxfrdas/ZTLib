@@ -3,7 +3,7 @@ package com.konka.dynamicplugin.core;
 import java.io.FileNotFoundException;
 import java.util.List;
 
-import com.konka.dynamicplugin.core.ResourceController.Dependence;
+import com.konka.dynamicplugin.core.impl.ResourceController.Dependence;
 
 import android.content.Context;
 import android.content.res.AssetManager;
@@ -140,6 +140,4 @@ public interface IPluginManager {
 	 * @return 未找到则返回{@code null}
 	 */
 	ClassLoader getClassLoader();
-	
-	void clearup();
 }
