@@ -45,38 +45,43 @@ import com.zt.lib.database.dao.IDAO;
  */
 public final class PluginManager implements IPluginManager {
 	private static final String TAG = PluginManager.class.getSimpleName();
+	private static volatile PluginManager sInstance;
 	private IDAO<PluginInfo> mPluginDB;
 	private ResourceController mResController;
 	private LocalPluginChecker mChecker;
 	private ExecutorService mThreads;
 	private PostToUI mPostToUI;
 
-	private static class InstanceHolder {
-		private static PluginManager sInstance = new PluginManager();
+	public static PluginManager getInstance(Context context) {
+		if (null == sInstance) {
+			synchronized (PluginManager.class) {
+				if (null == sInstance) {
+					sInstance = new PluginManager(context);
+				}
+			}
+		}
+		return sInstance;
 	}
 
-	public static PluginManager getInstance() {
-		return InstanceHolder.sInstance;
-	}
-
-	private PluginManager() {
+	private PluginManager(Context context) {
 		mChecker = LocalPluginChecker.getInstance();
+		mPluginDB = PluginInfo2DAO.getInstance(context);
 		mThreads = Executors.newFixedThreadPool(2);
 		mPostToUI = new PostToUI();
 	}
 
 	@Override
-	public void setResourceDependence(Dependence dependence) {
+	public void setResource(ClassLoader loader, AssetManager asset, Resources res,
+			Theme theme) {
 		if (null == mResController) {
 			mResController = new ResourceController();
 		}
-		mResController.setDependence(dependence);
+		mResController.setDependence(new Dependence(loader, asset, res, theme));
 	}
 
 	@Override
 	public void initPlugins(Context context) throws FileNotFoundException {
 		Log.d(TAG, "initPlugins");
-		mPluginDB = PluginInfo2DAO.getInstance(context);
 		mChecker.initChecker(context, mPluginDB);
 		final List<PluginInfo> existPlugins = parseAllExistPluginsInfo(context,
 				mChecker.getLocalExistPlugins());
@@ -92,8 +97,7 @@ public final class PluginManager implements IPluginManager {
 	}
 
 	@Override
-	public void asyncInitPlugins(final Context context,
-			final IAsyncListener listener) {
+	public void asyncInitPlugins(final Context context, final IAsyncListener listener) {
 		Log.d(TAG, "asyncInitPlugins");
 		synchronized (mChecker) {
 			mThreads.execute(new Runnable() {
@@ -102,7 +106,8 @@ public final class PluginManager implements IPluginManager {
 				public void run() {
 					try {
 						initPlugins(context);
-						mPostToUI.post(listener, Task.success());
+						mPostToUI.post(listener,
+								Task.success(new ArrayList<PluginInfo>()));
 					} catch (FileNotFoundException e) {
 						mPostToUI.post(listener, Task.fail(e.toString()));
 					}
@@ -165,9 +170,7 @@ public final class PluginManager implements IPluginManager {
 		final String apkPath = pluginInfo.getApkPath();
 		final String dexPath = pluginInfo.getDexPath();
 		// query database
-		Condition whereApkPath = mPluginDB.buildCondition()
-				.where(PluginInfo2Proxy.apkPath).equal(apkPath).buildDone();
-		List<PluginInfo> info = mPluginDB.query(whereApkPath);
+		List<PluginInfo> info = mPluginDB.query(whereApkPath(apkPath));
 		if (!info.isEmpty() && info.get(0).isInstalled()) {
 			// check for update
 			PluginInfo recorded = info.get(0);
@@ -178,7 +181,7 @@ public final class PluginManager implements IPluginManager {
 				// 需要升级重新安装，不过依然记忆enable的状态
 				pluginInfo.setEnabled(recorded.isEnabled());
 				pluginInfo.setEnableIndex(recorded.getEnableIndex());
-				mPluginDB.update(pluginInfo, whereApkPath);
+				mPluginDB.update(pluginInfo, whereApkPath(apkPath));
 				installPlugin(context, pluginInfo);
 			}
 		} else {
@@ -204,6 +207,11 @@ public final class PluginManager implements IPluginManager {
 		return installed;
 	}
 
+	private Condition whereApkPath(String apkPath) {
+		return mPluginDB.buildCondition().where(PluginInfo2Proxy.apkPath)
+				.equal(apkPath).buildDone();
+	}
+
 	@Override
 	public void asyncInstallPlugin(final Context context,
 			final PluginInfo pluginInfo, final IAsyncListener listener) {
@@ -213,10 +221,41 @@ public final class PluginManager implements IPluginManager {
 			public void run() {
 				boolean success = installPlugin(context, pluginInfo);
 				if (success) {
-					mPostToUI.post(listener, Task.success());
+					List<PluginInfo> info = mPluginDB.query(whereApkPath(pluginInfo
+							.getApkPath()));
+					mPostToUI.post(listener, Task.success(info));
 				} else {
 					mPostToUI.post(listener,
 							Task.fail(pluginInfo.getTitle() + " already installed"));
+				}
+			}
+		});
+	}
+
+	@Override
+	public void asyncInstallPlugins(final Context context,
+			final List<PluginInfo> pluginInfos, final IAsyncListener listener) {
+		mThreads.execute(new Runnable() {
+
+			@Override
+			public void run() {
+				boolean success = false;
+				List<PluginInfo> result = new ArrayList<PluginInfo>();
+				for (PluginInfo pluginInfo : pluginInfos) {
+					success = installPlugin(context, pluginInfo);
+					if (!success) {
+						mPostToUI.post(
+								listener,
+								Task.fail(pluginInfo.getTitle()
+										+ " already installed"));
+						break;
+					}
+					List<PluginInfo> info = mPluginDB.query(whereApkPath(pluginInfo
+							.getApkPath()));
+					result.add(info.get(0));
+				}
+				if (success) {
+					mPostToUI.post(listener, Task.success(result));
 				}
 			}
 		});
@@ -228,9 +267,7 @@ public final class PluginManager implements IPluginManager {
 		final String apkPath = pluginInfo.getApkPath();
 		final String dexPath = pluginInfo.getDexPath();
 		// query database
-		Condition whereApkPath = mPluginDB.buildCondition()
-				.where(PluginInfo2Proxy.apkPath).equal(apkPath).buildDone();
-		List<PluginInfo> info = mPluginDB.query(whereApkPath);
+		List<PluginInfo> info = mPluginDB.query(whereApkPath(apkPath));
 		if (!info.isEmpty() && info.get(0).isInstalled()) {
 			// uninstall
 			new File(dexPath).delete();
@@ -241,7 +278,7 @@ public final class PluginManager implements IPluginManager {
 			plugin.setEnabled(false);
 			plugin.setEnableIndex(-1);
 			plugin.setVersion(1);
-			mPluginDB.update(plugin, whereApkPath);
+			mPluginDB.update(plugin, whereApkPath(apkPath));
 			uninstalled = true;
 		}
 		return uninstalled;
@@ -256,12 +293,43 @@ public final class PluginManager implements IPluginManager {
 			public void run() {
 				boolean success = uninstallPlugin(context, pluginInfo);
 				if (success) {
-					mPostToUI.post(listener, Task.success());
+					List<PluginInfo> info = mPluginDB.query(whereApkPath(pluginInfo
+							.getApkPath()));
+					mPostToUI.post(listener, Task.success(info));
 				} else {
 					mPostToUI.post(
 							listener,
 							Task.fail(pluginInfo.getTitle()
 									+ " has not been installed"));
+				}
+			}
+		});
+	}
+
+	@Override
+	public void asyncUninstallPlugins(final Context context,
+			final List<PluginInfo> pluginInfos, final IAsyncListener listener) {
+		mThreads.execute(new Runnable() {
+
+			@Override
+			public void run() {
+				boolean success = false;
+				List<PluginInfo> result = new ArrayList<PluginInfo>();
+				for (PluginInfo pluginInfo : pluginInfos) {
+					success = uninstallPlugin(context, pluginInfo);
+					if (!success) {
+						mPostToUI.post(
+								listener,
+								Task.fail(pluginInfo.getTitle()
+										+ " has not been installed"));
+						break;
+					}
+					List<PluginInfo> info = mPluginDB.query(whereApkPath(pluginInfo
+							.getApkPath()));
+					result.add(info.get(0));
+				}
+				if (success) {
+					mPostToUI.post(listener, Task.success(result));
 				}
 			}
 		});
@@ -285,10 +353,8 @@ public final class PluginManager implements IPluginManager {
 	@Override
 	public boolean enablePlugin(PluginInfo plugin) {
 		boolean enabled = false;
-		Condition whereApkPath = mPluginDB.buildCondition()
-				.where(PluginInfo2Proxy.apkPath).equal(plugin.getApkPath())
-				.buildDone();
-		List<PluginInfo> infos = mPluginDB.query(whereApkPath);
+		final String apkPath = plugin.getApkPath();
+		List<PluginInfo> infos = mPluginDB.query(whereApkPath(apkPath));
 		if (!infos.isEmpty()) {
 			PluginInfo info = infos.get(0);
 			if (!info.isEnabled()) {
@@ -302,7 +368,7 @@ public final class PluginManager implements IPluginManager {
 							enabledInfos.size() - 1).getEnableIndex();
 					info.setEnableIndex(lastEnableIndex + 1);
 				}
-				mPluginDB.update(info, whereApkPath);
+				mPluginDB.update(info, whereApkPath(apkPath));
 				mResController.loadPluginResource(info);
 				enabled = true;
 			}
@@ -319,7 +385,9 @@ public final class PluginManager implements IPluginManager {
 			public void run() {
 				boolean success = enablePlugin(plugin);
 				if (success) {
-					mPostToUI.post(listener, Task.success());
+					List<PluginInfo> info = mPluginDB.query(whereApkPath(plugin
+							.getApkPath()));
+					mPostToUI.post(listener, Task.success(info));
 				} else {
 					mPostToUI.post(listener,
 							Task.fail(plugin.getTitle() + " has already enabled"));
@@ -329,17 +397,42 @@ public final class PluginManager implements IPluginManager {
 	}
 
 	@Override
+	public void asyncEnablePlugins(final List<PluginInfo> plugins,
+			final IAsyncListener listener) {
+		mThreads.execute(new Runnable() {
+
+			@Override
+			public void run() {
+				boolean success = false;
+				List<PluginInfo> result = new ArrayList<PluginInfo>();
+				for (PluginInfo plugin : plugins) {
+					success = enablePlugin(plugin);
+					if (!success) {
+						mPostToUI.post(listener, Task.fail(plugin.getTitle()
+								+ " has already enabled"));
+						break;
+					}
+					List<PluginInfo> info = mPluginDB.query(whereApkPath(plugin
+							.getApkPath()));
+					result.add(info.get(0));
+				}
+				if (success) {
+					mPostToUI.post(listener, Task.success(result));
+				}
+			}
+		});
+	}
+
+	@Override
 	public boolean disablePlugin(PluginInfo plugin) {
 		boolean disabled = false;
-		Condition whereApkPath = mPluginDB.buildCondition()
-				.where(PluginInfo2Proxy.apkPath).equal(plugin.getApkPath())
-				.buildDone();
-		List<PluginInfo> infos = mPluginDB.query(whereApkPath);
+		final String apkPath = plugin.getApkPath();
+		List<PluginInfo> infos = mPluginDB.query(whereApkPath(apkPath));
 		if (!infos.isEmpty()) {
 			PluginInfo info = infos.get(0);
 			info.setEnabled(false);
 			info.setEnableIndex(-1);
-			mPluginDB.update(info, whereApkPath);
+			mPluginDB.update(info, whereApkPath(apkPath));
 			mResController.unloadPluginResource(info);
 			disabled = true;
 		}
@@ -355,10 +448,39 @@ public final class PluginManager implements IPluginManager {
 			public void run() {
 				boolean success = disablePlugin(plugin);
 				if (success) {
-					mPostToUI.post(listener, Task.success());
+					List<PluginInfo> info = mPluginDB.query(whereApkPath(plugin
+							.getApkPath()));
+					mPostToUI.post(listener, Task.success(info));
 				} else {
 					mPostToUI.post(listener,
 							Task.fail(plugin.getTitle() + " has not been enable"));
+				}
+			}
+		});
+	}
+
+	@Override
+	public void asyncDisablePlugins(final List<PluginInfo> plugins,
+			final IAsyncListener listener) {
+		mThreads.execute(new Runnable() {
+
+			@Override
+			public void run() {
+				boolean success = false;
+				List<PluginInfo> result = new ArrayList<PluginInfo>();
+				for (PluginInfo plugin : plugins) {
+					success = disablePlugin(plugin);
+					if (!success) {
+						mPostToUI.post(listener, Task.fail(plugin.getTitle()
+								+ " has already enabled"));
+						break;
+					}
+					List<PluginInfo> info = mPluginDB.query(whereApkPath(plugin
+							.getApkPath()));
+					result.add(info.get(0));
+				}
+				if (success) {
+					mPostToUI.post(listener, Task.success(result));
 				}
 			}
 		});

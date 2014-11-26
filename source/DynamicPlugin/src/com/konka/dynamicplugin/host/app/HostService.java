@@ -9,7 +9,6 @@ import android.content.res.Resources.Theme;
 import android.os.IBinder;
 
 import com.konka.dynamicplugin.core.IPluginManager;
-import com.konka.dynamicplugin.core.impl.ResourceController.Dependence;
 import com.konka.dynamicplugin.host.IHost;
 
 /**
@@ -20,9 +19,8 @@ public abstract class HostService extends Service implements IHost {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		getPluginManager().setResourceDependence(
-				new Dependence(super.getClassLoader(), super.getAssets(), super
-						.getResources(), super.getTheme()));
+		getPluginManager().setResource(super.getClassLoader(), super.getAssets(),
+				super.getResources(), super.getTheme());
 	}
 
 	@Override

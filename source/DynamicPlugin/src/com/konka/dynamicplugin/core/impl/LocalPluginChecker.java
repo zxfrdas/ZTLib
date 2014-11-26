@@ -42,7 +42,7 @@ public class LocalPluginChecker {
 
 	public void initChecker(Context context, IDAO<PluginInfo> database) {
 		mLocalPluginPath = checkStoragePathExist(context);
-		releaseDefaultPlugin(context, mLocalPluginPath.getAbsolutePath());
+		releaseDefaultPlugin(context, mLocalPluginPath);
 		mPluginDB = database;
 	}
 
@@ -56,7 +56,11 @@ public class LocalPluginChecker {
 		}
 	}
 
-	private void releaseDefaultPlugin(Context context, String outPath) {
+	private void releaseDefaultPlugin(Context context, File outPath) {
+		if (0 != outPath.listFiles().length) {
+			// 不需要从assets拷贝
+			return;
+		}
 		AssetManager assetManager = context.getAssets();
 		String[] files;
 		try {
@@ -64,7 +68,7 @@ public class LocalPluginChecker {
 			for (String s : files) {
 				Log.d(TAG, "asset's plugin file = " + s);
 				InputStream is = assetManager.open("plugins/" + s);
-				File f = new File(outPath + File.separator + s);
+				File f = new File(outPath.getAbsoluteFile() + File.separator + s);
 				output(is, new FileOutputStream(f));
 				f.setWritable(true, false);
 				f.setReadable(true, false);

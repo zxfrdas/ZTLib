@@ -11,8 +11,8 @@ public abstract class HostApplication extends Application implements IHost {
 	private IPluginManager mPluginManager;
 
 	@Override
-	public void onCreate() {
-		mPluginManager = PluginManager.getInstance();
+	public final void onCreate() {
+		mPluginManager = PluginManager.getInstance(getApplicationContext());
 		onAppCreate();
 		super.onCreate();
 	}

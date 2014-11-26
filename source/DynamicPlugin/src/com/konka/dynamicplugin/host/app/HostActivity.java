@@ -10,7 +10,6 @@ import android.util.Log;
 
 import com.konka.dynamicplugin.core.IPluginManager;
 import com.konka.dynamicplugin.core.impl.PluginManager;
-import com.konka.dynamicplugin.core.impl.ResourceController.Dependence;
 import com.konka.dynamicplugin.host.IHost;
 
 /**
@@ -21,9 +20,8 @@ public abstract class HostActivity extends Activity implements IHost {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		getPluginManager().setResourceDependence(
-				new Dependence(super.getClassLoader(), super.getAssets(), super
-						.getResources(), super.getTheme()));
+		getPluginManager().setResource(super.getClassLoader(), super.getAssets(),
+				super.getResources(), super.getTheme());
 	}
 
 	@Override
