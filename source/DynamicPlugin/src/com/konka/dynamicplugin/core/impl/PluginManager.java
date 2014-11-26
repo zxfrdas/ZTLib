@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import android.content.Context;
 import android.content.res.AssetManager;
@@ -13,10 +15,10 @@ import android.graphics.drawable.Drawable;
 import android.util.Log;
 import android.view.View;
 
-import com.konka.dynamicplugin.core.IPluginAsync;
-import com.konka.dynamicplugin.core.IPluginAsync.Type;
+import com.konka.dynamicplugin.core.IAsyncListener;
 import com.konka.dynamicplugin.core.IPluginManager;
 import com.konka.dynamicplugin.core.PluginInfo;
+import com.konka.dynamicplugin.core.impl.PostToUI.Task;
 import com.konka.dynamicplugin.core.impl.ResourceController.Dependence;
 import com.konka.dynamicplugin.core.tools.DLUtils;
 import com.konka.dynamicplugin.database.PluginInfo2DAO;
@@ -46,7 +48,8 @@ public final class PluginManager implements IPluginManager {
 	private IDAO<PluginInfo> mPluginDB;
 	private ResourceController mResController;
 	private LocalPluginChecker mChecker;
-	private IPluginAsync.IListener mListener;
+	private ExecutorService mThreads;
+	private PostToUI mPostToUI;
 
 	private static class InstanceHolder {
 		private static PluginManager sInstance = new PluginManager();
@@ -58,11 +61,8 @@ public final class PluginManager implements IPluginManager {
 
 	private PluginManager() {
 		mChecker = LocalPluginChecker.getInstance();
-	}
-
-	@Override
-	public void setActionListener(IPluginAsync.IListener listener) {
-		mListener = listener;
+		mThreads = Executors.newFixedThreadPool(2);
+		mPostToUI = new PostToUI();
 	}
 
 	@Override
@@ -77,7 +77,7 @@ public final class PluginManager implements IPluginManager {
 	public void initPlugins(Context context) throws FileNotFoundException {
 		Log.d(TAG, "initPlugins");
 		mPluginDB = PluginInfo2DAO.getInstance(context);
-		mChecker.initChecker(context);
+		mChecker.initChecker(context, mPluginDB);
 		final List<PluginInfo> existPlugins = parseAllExistPluginsInfo(context,
 				mChecker.getLocalExistPlugins());
 		if (mChecker.isRecordEmpty()) {
@@ -88,6 +88,26 @@ public final class PluginManager implements IPluginManager {
 			final List<PluginInfo> recordedPlugins = getAllRecordedPlugins();
 			mChecker.syncExistPluginToRecorded(context, existPlugins,
 					recordedPlugins);
+		}
+	}
+
+	@Override
+	public void asyncInitPlugins(final Context context,
+			final IAsyncListener listener) {
+		Log.d(TAG, "asyncInitPlugins");
+		synchronized (mChecker) {
+			mThreads.execute(new Runnable() {
+
+				@Override
+				public void run() {
+					try {
+						initPlugins(context);
+						mPostToUI.post(listener, Task.success());
+					} catch (FileNotFoundException e) {
+						mPostToUI.post(listener, Task.fail(e.toString()));
+					}
+				}
+			});
 		}
 	}
 
@@ -140,7 +160,8 @@ public final class PluginManager implements IPluginManager {
 	}
 
 	@Override
-	public void installPlugin(Context context, PluginInfo pluginInfo) {
+	public boolean installPlugin(Context context, PluginInfo pluginInfo) {
+		boolean installed = false;
 		final String apkPath = pluginInfo.getApkPath();
 		final String dexPath = pluginInfo.getDexPath();
 		// query database
@@ -178,18 +199,32 @@ public final class PluginManager implements IPluginManager {
 				plugin.setInstalled(true);
 				mChecker.updateRecord(context, plugin);
 			}
-			if (null != mListener) {
-				mListener.success(Type.INSTALL, null);
-			}
+			installed = true;
 		}
+		return installed;
 	}
 
 	@Override
-	public void uninstallPlugin(Context context, PluginInfo pluginInfo) {
-		if (!pluginInfo.isInstalled()) {
-			Log.d(TAG, "already uninstall !");
-			return;
-		}
+	public void asyncInstallPlugin(final Context context,
+			final PluginInfo pluginInfo, final IAsyncListener listener) {
+		mThreads.execute(new Runnable() {
+
+			@Override
+			public void run() {
+				boolean success = installPlugin(context, pluginInfo);
+				if (success) {
+					mPostToUI.post(listener, Task.success());
+				} else {
+					mPostToUI.post(listener,
+							Task.fail(pluginInfo.getTitle() + " already installed"));
+				}
+			}
+		});
+	}
+
+	@Override
+	public boolean uninstallPlugin(Context context, PluginInfo pluginInfo) {
+		boolean uninstalled = false;
 		final String apkPath = pluginInfo.getApkPath();
 		final String dexPath = pluginInfo.getDexPath();
 		// query database
@@ -207,7 +242,29 @@ public final class PluginManager implements IPluginManager {
 			plugin.setEnableIndex(-1);
 			plugin.setVersion(1);
 			mPluginDB.update(plugin, whereApkPath);
+			uninstalled = true;
 		}
+		return uninstalled;
+	}
+
+	@Override
+	public void asyncUninstallPlugin(final Context context,
+			final PluginInfo pluginInfo, final IAsyncListener listener) {
+		mThreads.execute(new Runnable() {
+
+			@Override
+			public void run() {
+				boolean success = uninstallPlugin(context, pluginInfo);
+				if (success) {
+					mPostToUI.post(listener, Task.success());
+				} else {
+					mPostToUI.post(
+							listener,
+							Task.fail(pluginInfo.getTitle()
+									+ " has not been installed"));
+				}
+			}
+		});
 	}
 
 	@Override
@@ -226,7 +283,8 @@ public final class PluginManager implements IPluginManager {
 	}
 
 	@Override
-	public void enablePlugin(PluginInfo plugin) {
+	public boolean enablePlugin(PluginInfo plugin) {
+		boolean enabled = false;
 		Condition whereApkPath = mPluginDB.buildCondition()
 				.where(PluginInfo2Proxy.apkPath).equal(plugin.getApkPath())
 				.buildDone();
@@ -246,12 +304,33 @@ public final class PluginManager implements IPluginManager {
 				}
 				mPluginDB.update(info, whereApkPath);
 				mResController.loadPluginResource(info);
+				enabled = true;
 			}
 		}
+		return enabled;
 	}
 
 	@Override
-	public void disablePlugin(PluginInfo plugin) {
+	public void asyncEnablePlugin(final PluginInfo plugin,
+			final IAsyncListener listener) {
+		mThreads.execute(new Runnable() {
+
+			@Override
+			public void run() {
+				boolean success = enablePlugin(plugin);
+				if (success) {
+					mPostToUI.post(listener, Task.success());
+				} else {
+					mPostToUI.post(listener,
+							Task.fail(plugin.getTitle() + " has already enabled"));
+				}
+			}
+		});
+	}
+
+	@Override
+	public boolean disablePlugin(PluginInfo plugin) {
+		boolean disabled = false;
 		Condition whereApkPath = mPluginDB.buildCondition()
 				.where(PluginInfo2Proxy.apkPath).equal(plugin.getApkPath())
 				.buildDone();
@@ -262,7 +341,27 @@ public final class PluginManager implements IPluginManager {
 			info.setEnableIndex(-1);
 			mPluginDB.update(info, whereApkPath);
 			mResController.unloadPluginResource(info);
+			disabled = true;
 		}
+		return disabled;
+	}
+
+	@Override
+	public void asyncDisablePlugin(final PluginInfo plugin,
+			final IAsyncListener listener) {
+		mThreads.execute(new Runnable() {
+
+			@Override
+			public void run() {
+				boolean success = disablePlugin(plugin);
+				if (success) {
+					mPostToUI.post(listener, Task.success());
+				} else {
+					mPostToUI.post(listener,
+							Task.fail(plugin.getTitle() + " has not been enable"));
+				}
+			}
+		});
 	}
 
 	private void loadPluginsResource(List<PluginInfo> pluginInfos) {

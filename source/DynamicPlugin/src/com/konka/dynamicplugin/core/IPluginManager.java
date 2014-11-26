@@ -14,13 +14,6 @@ import android.view.View;
 public interface IPluginManager {
 
 	/**
-	 * 设置操作监听器。如果接口实现为异步操作，则需对此监听器做处理。
-	 * 
-	 * @param listener
-	 */
-	void setActionListener(IPluginAsync.IListener listener);
-
-	/**
 	 * 初始化资源控制器，以便运行中进行动态切换资源
 	 * 
 	 * @param controller
@@ -42,6 +35,8 @@ public interface IPluginManager {
 	 * @throws FileNotFoundException 
 	 */
 	void initPlugins(Context context) throws FileNotFoundException;
+	
+	void asyncInitPlugins(Context context, IAsyncListener listener);
 
 	/**
 	 * 获取目前被记录的所有插件，不论是否安装、是否启用。
@@ -58,7 +53,10 @@ public interface IPluginManager {
 	 * @param pluginInfo
 	 *            指定插件的插件信息
 	 */
-	void installPlugin(Context context, PluginInfo pluginInfo);
+	boolean installPlugin(Context context, PluginInfo pluginInfo);
+	
+	void asyncInstallPlugin(final Context context, final PluginInfo pluginInfo,
+			final IAsyncListener listener);
 
 	/**
 	 * 卸载指定插件
@@ -68,7 +66,10 @@ public interface IPluginManager {
 	 * @param pluginInfo
 	 *            指定插件的插件信息
 	 */
-	void uninstallPlugin(Context context, PluginInfo pluginInfo);
+	boolean uninstallPlugin(Context context, PluginInfo pluginInfo);
+	
+	void asyncUninstallPlugin(final Context context, final PluginInfo pluginInfo,
+			final IAsyncListener listener);
 
 	/**
 	 * 获取所有已经被宿主安装的插件
@@ -92,7 +93,9 @@ public interface IPluginManager {
 	 * @param plugin
 	 *            指定插件的信息
 	 */
-	void enablePlugin(PluginInfo plugin);
+	boolean enablePlugin(PluginInfo plugin);
+	
+	void asyncEnablePlugin(final PluginInfo plugin, final IAsyncListener listener);
 
 	/**
 	 * 禁用指定插件
@@ -100,7 +103,9 @@ public interface IPluginManager {
 	 * @param plugin
 	 *            指定插件的信息
 	 */
-	void disablePlugin(PluginInfo plugin);
+	boolean disablePlugin(PluginInfo plugin);
+	
+	void asyncDisablePlugin(final PluginInfo plugin, final IAsyncListener listener);
 
 	/**
 	 * 获取指定插件提供的视图

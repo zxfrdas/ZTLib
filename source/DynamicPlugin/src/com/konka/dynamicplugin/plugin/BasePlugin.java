@@ -9,13 +9,14 @@ import android.content.res.Resources;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.View.OnAttachStateChangeListener;
 
 /**
  * 插件基类，对{@code IPlugin}接口做了通用实现。建议插件继承此基类而非直接实现接口。
  * <p>
  * 如果插件中需要用到自定义控件，则务必继承此基类，因为自定义控件的热插拔实现有一些特殊的逻辑。
  */
-public abstract class BasePlugin implements IPlugin {
+public abstract class BasePlugin implements IPlugin, OnAttachStateChangeListener {
 	private Context mContext;
 	private LayoutInflater mInflater;
 

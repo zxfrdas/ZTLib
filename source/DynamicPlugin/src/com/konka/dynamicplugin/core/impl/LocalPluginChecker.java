@@ -18,16 +18,16 @@ import android.util.Log;
 
 import com.konka.dynamicplugin.core.PluginInfo;
 import com.konka.dynamicplugin.core.tools.MD5FileUtil;
-import com.konka.dynamicplugin.database.PluginInfo2DAO;
 import com.konka.dynamicplugin.database.PluginInfo2Proxy;
 import com.zt.lib.database.condition.Condition;
+import com.zt.lib.database.dao.IDAO;
 
 public class LocalPluginChecker {
 	private static final String TAG = PluginManager.class.getSimpleName();
 	private static final String SYSTEM_PLUGIN_PATH = "/data/misc/konka/plugins/plugin";
 	private static final long GAP = 10 * 1000; // 10s
 	private File mLocalPluginPath;
-	private PluginInfo2DAO mPluginDB;
+	private IDAO<PluginInfo> mPluginDB;
 
 	private static final class InstanceHolder {
 		private static final LocalPluginChecker sInstance = new LocalPluginChecker();
@@ -40,10 +40,10 @@ public class LocalPluginChecker {
 	private LocalPluginChecker() {
 	}
 
-	public void initChecker(Context context) {
+	public void initChecker(Context context, IDAO<PluginInfo> database) {
 		mLocalPluginPath = checkStoragePathExist(context);
 		releaseDefaultPlugin(context, mLocalPluginPath.getAbsolutePath());
-		mPluginDB = PluginInfo2DAO.getInstance(context);
+		mPluginDB = database;
 	}
 
 	private File checkStoragePathExist(Context context) {
