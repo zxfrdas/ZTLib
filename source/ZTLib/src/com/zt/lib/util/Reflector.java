@@ -192,6 +192,7 @@ public class Reflector {
 	 */
 	public static void setFieldValue(Object o, String fieldName, Object value)
 			throws IllegalArgumentException, NoSuchFieldException {
+		if (null == fieldName) throw new NoSuchFieldException();
 		Field field = o.getClass().getDeclaredField(fieldName);
 		field.setAccessible(true);
 		try {
