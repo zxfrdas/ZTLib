@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import android.app.Activity;
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
@@ -52,7 +53,7 @@ public class MainActivity extends Activity implements OnClickListener {
 		} else if (R.id.delete == id) {
 			use = delete();
 		}
-		int count = dao.getCount();
+		int count = count();
 		time.setText("耗时 = " + use + ", 平均一次操作耗时 = " + (double) use / count);
 	}
 	
@@ -83,6 +84,14 @@ public class MainActivity extends Activity implements OnClickListener {
 		long start = SystemClock.currentThreadTimeMillis();
 		dao.deleteAll();
 		return SystemClock.currentThreadTimeMillis() - start;
+	}
+	
+	public int count() {
+		long start = SystemClock.currentThreadTimeMillis();
+		int count = dao.getCount();
+		Log.d("ZT", (SystemClock.currentThreadTimeMillis() - start) + "");
+		Log.d("ZT", "count = " + count);
+		return count;
 	}
 	
 	

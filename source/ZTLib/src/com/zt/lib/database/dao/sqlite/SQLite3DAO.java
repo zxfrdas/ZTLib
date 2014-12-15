@@ -296,10 +296,21 @@ public abstract class SQLite3DAO<T> implements IDAO<T> {
 
 	@Override
 	public int getCount() {
+		int count = 0;
+		String sql = "SELECT COUNT(*) FROM " + tableName;
+		Cursor c = null;
 		mReadLock.lock();
-		int count = mDatabase.query(tableName, null, null, null, null, null, null)
-				.getCount();
-		mReadLock.unlock();
+		try {
+			c = mDatabase.rawQuery(sql, null);
+		} catch (SQLiteException e) {
+			e.printStackTrace();
+		} finally {
+			mReadLock.unlock();
+		}
+		if (null != c && c.moveToFirst()) {
+			count = c.getInt(0);
+			c.close();
+		}
 		return count;
 	}
 
