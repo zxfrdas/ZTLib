@@ -24,7 +24,7 @@ import com.zt.lib.database.dao.IDAO;
 
 public class LocalPluginChecker {
 	private static final String TAG = PluginManager.class.getSimpleName();
-	private static final String SYSTEM_PLUGIN_PATH = "/data/misc/konka/plugins/plugin";
+	private static final String SYSTEM_PLUGIN_PATH = "/data/misc/konka/plugin_apk";
 	private static final long GAP = 10 * 1000; // 10s
 	private File mLocalPluginPath;
 	private IDAO<PluginInfo> mPluginDB;
