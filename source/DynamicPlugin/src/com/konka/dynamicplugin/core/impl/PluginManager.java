@@ -161,6 +161,7 @@ public final class PluginManager implements IPluginManager {
 
 	@Override
 	public List<PluginInfo> getAllRecordedPlugins() {
+		Log.d(TAG, "getAllRecordedPlugins");
 		return mPluginDB.queryAll();
 	}
 
@@ -337,12 +338,14 @@ public final class PluginManager implements IPluginManager {
 
 	@Override
 	public List<PluginInfo> getInstalledPlugins() {
+		Log.d(TAG, "getInstalledPlugins");
 		return mPluginDB.query(mPluginDB.buildCondition()
 				.where(PluginInfo2Proxy.installed).equal(true).buildDone());
 	}
 
 	@Override
 	public List<PluginInfo> getEnablePlugins() {
+		Log.d(TAG, "getEnablePlugins");
 		List<PluginInfo> enablePlugins = mPluginDB.query(mPluginDB.buildCondition()
 				.where(PluginInfo2Proxy.enabled).equal(true)
 				.orderby(PluginInfo2Proxy.enableIndex).buildDone());

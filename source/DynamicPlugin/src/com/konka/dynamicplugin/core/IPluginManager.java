@@ -26,7 +26,7 @@ public interface IPluginManager {
 	 * <p>
 	 * 如果无数据，则在指定路径下查找插件APK文件并解析插入数据库。
 	 * <p>
-	 * 路径1:{@code /data/misc/konka/plugins/plugin/}
+	 * 路径1:{@code /data/misc/konka/plugin_apk/}
 	 * <p>
 	 * 路径2:{@code /data/data/packageName/app_plugins/}
 	 * <p>
