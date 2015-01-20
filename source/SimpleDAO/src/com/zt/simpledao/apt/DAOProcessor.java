@@ -1,7 +1,9 @@
 package com.zt.simpledao.apt;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -25,13 +27,14 @@ import com.zt.simpledao.Table;
 @SupportedSourceVersion(SourceVersion.RELEASE_6)
 public class DAOProcessor extends AbstractProcessor {
 	private Filer filer;
-	private ColumnItem primary;
+	private List<ColumnItem> primaryKeys;
 	private Map<Integer, ColumnItem> indexItemMap;
 
 	private static class ColumnItem {
 		public int index;
 		public String name;
 		public SQLDataType type;
+		public boolean primary;
 	}
 
 	@Override
@@ -71,17 +74,22 @@ public class DAOProcessor extends AbstractProcessor {
 		proxyContent.append("\npublic class ").append(proxyClassName)
 				.append(" implements IBeanProxy {\n");
 		proxyContent.append("	// ").append(element.toString()).append("\n");
-
+		
+		if (null == primaryKeys) {
+			primaryKeys = new ArrayList<DAOProcessor.ColumnItem>();
+		} else {
+			primaryKeys.clear();
+		}
 		for (Element element2 : element.getEnclosedElements()) {
 			if (element2.getKind().isField()) {
 				Column c = element2.getAnnotation(Column.class);
 				ColumnItem column = new ColumnItem();
-				column.index = ((Column) c).index();
-				column.name = ((Column) c).name();
-				column.type = ((Column) c).type();
-				if (0 == column.index) {
-					// primary id
-					primary = column;
+				column.index = c.index();
+				column.name = c.name();
+				column.type = c.type();
+				column.primary = c.primary();
+				if (column.primary) {
+					primaryKeys.add(column);
 				}
 				indexItemMap.put(column.index, column);
 				proxyContent.append("	public static final String ")
@@ -119,23 +127,30 @@ public class DAOProcessor extends AbstractProcessor {
 	}
 
 	private String crateTable(String table) {
+		// Create table xxx (column type, column type, primary key (column));
 		StringBuilder sb = new StringBuilder();
 		sb.append("create table ").append(table).append("(");
-		int startIndex = 0;
-		if (null == primary) {
-			// 数据类未声明index=0的键，由我们创建一个。
-			primary = new ColumnItem();
-			primary.index = 0;
-			primary.name = "_id";
-			sb.append(primary.name).append(" integer primary key autoincrement, ");
-			startIndex = 1;
-		}
-		final int total = indexItemMap.size() + startIndex;
+		final int total = indexItemMap.size();
 		// 转换为了按Column中声明的index顺序构造sql语句。
-		for (int i = startIndex; i < total; i++) {
+		for (int i = 0; i < total; i++) {
 			ColumnItem item = indexItemMap.get(i);
 			sb.append(item.name).append(" ").append(item.type.toString());
 			if (item.index == (total - 1)) {
+				// 创建最后一列
+				if (!primaryKeys.isEmpty()) {
+					// 存在主键，在最后添加主键语句
+					sb.append(", ").append("primary key (");
+					final int primaryTotal = primaryKeys.size();
+					for (int pri = 0; pri < primaryTotal; pri ++) {
+						ColumnItem primary = primaryKeys.get(pri);
+						sb.append(primary.name);
+						if (pri != (primaryTotal - 1)) {
+							// 非最后一个
+							sb.append(",");
+						}
+					}
+					sb.append(")");
+				}
 				sb.append(");");
 			} else {
 				sb.append(", ");

@@ -11,4 +11,5 @@ public @interface Column {
 	String name();
 	int index();
 	SQLDataType type();
+	boolean primary() default false;
 }
