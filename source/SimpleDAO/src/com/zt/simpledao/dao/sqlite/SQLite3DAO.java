@@ -62,6 +62,29 @@ public abstract class SQLite3DAO<T> implements IDAO<T> {
 			int newVersion, IBeanProxy proxy);
 
 	@Override
+	public boolean insert(List<ContentValues> valuesList) {
+		long ret = -1;
+		mWriteLock.lock();
+		mDatabase.beginTransaction();
+		try {
+			for (ContentValues v : valuesList) {
+				ret = mDatabase.insert(tableName, null, v);
+			}
+			mDatabase.setTransactionSuccessful();
+		} catch (SQLiteException e) {
+			e.printStackTrace();
+			ret = -1;
+		} finally {
+			mDatabase.endTransaction();
+			mWriteLock.unlock();
+		}
+		if (-1 != ret) {
+			return true;
+		}
+		return false;
+	}
+	
+	@Override
 	public boolean insert(T item) {
 		long ret = -1;
 		ContentValues values = setColumnToContentValue(mParser.getAllColumnItem(),
@@ -248,14 +271,51 @@ public abstract class SQLite3DAO<T> implements IDAO<T> {
 	}
 
 	@Override
+	public Cursor queryForCursor(Condition condition) {
+		Cursor c = null;
+		mReadLock.lock();
+		try {
+			c = mDatabase.query(tableName, //table name
+							null, //columns
+							condition.getSelection(), //selection
+							condition.getSelectionArgs(), //selection args
+							condition.getGroupby(), //groupby
+							null, //having
+							condition.getOrderBy()); //orderby
+		} catch (SQLiteException e) {
+			e.printStackTrace();
+		} finally {
+			mReadLock.unlock();
+		}
+		return c;
+	}
+	
+	@Override
+	public Cursor query(String sql, String[] selectionArgs) {
+		Cursor c = null;
+		mReadLock.lock();
+		try {
+			c = mDatabase.rawQuery(sql, selectionArgs);
+		} catch (SQLiteException e) {
+			e.printStackTrace();
+		} finally {
+			mReadLock.unlock();
+		}
+		return c;
+	}
+	
+	@Override
 	public List<T> query(Condition condition) {
 		Cursor c = null;
 		mReadLock.lock();
 		try {
-			c = mDatabase
-					.query(tableName, null, condition.getSelection(),
-							condition.getSelectionArgs(), null, null,
-							condition.getOrderBy());
+			c = mDatabase.query(tableName, //table name
+							null, //columns
+							condition.getSelection(), //selection
+							condition.getSelectionArgs(), //selection args
+							condition.getGroupby(), //groupby
+							null, //having
+							condition.getOrderBy()); //orderby
 		} catch (SQLiteException e) {
 			e.printStackTrace();
 		} finally {
@@ -272,6 +332,20 @@ public abstract class SQLite3DAO<T> implements IDAO<T> {
 		return items;
 	}
 
+	@Override
+	public Cursor queryAllForCursor() {
+		Cursor c = null;
+		mReadLock.lock();
+		try {
+			c = mDatabase.query(tableName, null, null, null, null, null, null);
+		} catch (SQLiteException e) {
+			e.printStackTrace();
+		} finally {
+			mReadLock.unlock();
+		}
+		return c;
+	}
+	
 	@Override
 	public List<T> queryAll() {
 		Cursor c = null;

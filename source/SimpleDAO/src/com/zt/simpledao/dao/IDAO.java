@@ -4,11 +4,23 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import android.content.ContentValues;
+import android.database.Cursor;
+
 import com.zt.simpledao.condition.Condition;
 import com.zt.simpledao.condition.IConditionBuilder;
 
 public interface IDAO<T> {
 
+	/**
+	 * 数据库单个插入操作。
+	 * 
+	 * @param valuesList
+	 *            试图插入的ContentValues列表
+	 * @return 成功返回{@code true}，反之{@code false}
+	 */
+	boolean insert(List<ContentValues> valuesList);
+	
 	/**
 	 * 数据库单个插入操作。
 	 * 
@@ -86,11 +98,29 @@ public interface IDAO<T> {
 	/**
 	 * 数据库查询操作
 	 * 
+	 * @param sql
+	 *            需要执行的sql语句
+	 * @return 所有符合条件的数据类
+	 */
+	Cursor query(String sql, String[] selectionArgs);
+	
+	/**
+	 * 数据库查询操作
+	 * 
 	 * @param condition
 	 *            操作的条件
 	 * @return 所有符合条件的数据类
 	 */
 	List<T> query(Condition condition);
+	
+	/**
+	 * 数据库查询操作
+	 * 
+	 * @param condition
+	 *            操作的条件
+	 * @return 所有符合条件的数据
+	 */
+	Cursor queryForCursor(Condition condition);
 
 	/**
 	 * 返回数据库所有结果
@@ -98,6 +128,13 @@ public interface IDAO<T> {
 	 * @return 数据库所有数据
 	 */
 	List<T> queryAll();
+	
+	/**
+	 * 返回数据库所有结果
+	 * 
+	 * @return 数据库所有数据
+	 */
+	Cursor queryAllForCursor();
 
 	/**
 	 * 获取共有多少行数据
