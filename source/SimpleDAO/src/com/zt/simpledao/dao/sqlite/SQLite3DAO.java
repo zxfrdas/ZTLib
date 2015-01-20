@@ -268,6 +268,20 @@ public abstract class SQLite3DAO<T> implements IDAO<T> {
 	}
 	
 	@Override
+	public Cursor query(String sql, String[] selectionArgs) {
+		Cursor c = null;
+		mReadLock.lock();
+		try {
+			c = mDatabase.rawQuery(sql, selectionArgs);
+		} catch (SQLiteException e) {
+			e.printStackTrace();
+		} finally {
+			mReadLock.unlock();
+		}
+		return c;
+	}
+	
+	@Override
 	public List<T> query(Condition condition) {
 		Cursor c = null;
 		mReadLock.lock();
