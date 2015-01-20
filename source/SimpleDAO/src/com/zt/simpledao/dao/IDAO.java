@@ -4,6 +4,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import android.database.Cursor;
+
 import com.zt.simpledao.condition.Condition;
 import com.zt.simpledao.condition.IConditionBuilder;
 
@@ -91,6 +93,15 @@ public interface IDAO<T> {
 	 * @return 所有符合条件的数据类
 	 */
 	List<T> query(Condition condition);
+	
+	/**
+	 * 数据库查询操作
+	 * 
+	 * @param condition
+	 *            操作的条件
+	 * @return 所有符合条件的数据
+	 */
+	Cursor queryForCursor(Condition condition);
 
 	/**
 	 * 返回数据库所有结果
@@ -98,6 +109,13 @@ public interface IDAO<T> {
 	 * @return 数据库所有数据
 	 */
 	List<T> queryAll();
+	
+	/**
+	 * 返回数据库所有结果
+	 * 
+	 * @return 数据库所有数据
+	 */
+	Cursor queryAllForCursor();
 
 	/**
 	 * 获取共有多少行数据

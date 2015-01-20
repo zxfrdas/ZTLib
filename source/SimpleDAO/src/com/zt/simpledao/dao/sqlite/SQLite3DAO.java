@@ -248,12 +248,31 @@ public abstract class SQLite3DAO<T> implements IDAO<T> {
 	}
 
 	@Override
+	public Cursor queryForCursor(Condition condition) {
+		Cursor c = null;
+		mReadLock.lock();
+		try {
+			c = mDatabase.query(tableName, //table name
+							null, //columns
+							condition.getSelection(), //selection
+							condition.getSelectionArgs(), //selection args
+							condition.getGroupby(), //groupby
+							null, //having
+							condition.getOrderBy()); //orderby
+		} catch (SQLiteException e) {
+			e.printStackTrace();
+		} finally {
+			mReadLock.unlock();
+		}
+		return c;
+	}
+	
+	@Override
 	public List<T> query(Condition condition) {
 		Cursor c = null;
 		mReadLock.lock();
 		try {
-			c = mDatabase
-					.query(tableName, //table name
+			c = mDatabase.query(tableName, //table name
 							null, //columns
 							condition.getSelection(), //selection
 							condition.getSelectionArgs(), //selection args
@@ -276,6 +295,20 @@ public abstract class SQLite3DAO<T> implements IDAO<T> {
 		return items;
 	}
 
+	@Override
+	public Cursor queryAllForCursor() {
+		Cursor c = null;
+		mReadLock.lock();
+		try {
+			c = mDatabase.query(tableName, null, null, null, null, null, null);
+		} catch (SQLiteException e) {
+			e.printStackTrace();
+		} finally {
+			mReadLock.unlock();
+		}
+		return c;
+	}
+	
 	@Override
 	public List<T> queryAll() {
 		Cursor c = null;
