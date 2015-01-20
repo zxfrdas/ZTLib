@@ -14,7 +14,6 @@ public class SQLiteConditionBuilder implements IConditionBuilder {
 	private List<Where> mWheres;
 	private List<Orderby> mOrderbys;
 	private Where where;
-	private Orderby orderby;
 	
 	public SQLiteConditionBuilder() {
 		mWheres = new ArrayList<Where>();
@@ -93,9 +92,11 @@ public class SQLiteConditionBuilder implements IConditionBuilder {
 	}
 
 	@Override
-	public IConditionBuilder orderby(String column) {
-		orderby = new Orderby();
+	public IConditionBuilder orderby(String column, boolean asc) {
+		Orderby orderby = new Orderby();
 		orderby.column = column;
+		orderby.asc = asc;
+		mOrderbys.add(orderby);
 		return this;
 	}
 
@@ -103,9 +104,6 @@ public class SQLiteConditionBuilder implements IConditionBuilder {
 	public IConditionBuilder and() {
 		if (null != where) {
 			mWheres.add(where);
-		}
-		if (null != orderby) {
-			mOrderbys.add(orderby);
 		}
 		return this;
 	}
@@ -181,10 +179,13 @@ public class SQLiteConditionBuilder implements IConditionBuilder {
 		StringBuilder sb = new StringBuilder();	
 		for (Orderby orderby : mOrderbys) {
 			sb.append(orderby.column);
-			sb.append(" ");
-			sb.append(AND);
+			if (orderby.asc) {
+				sb.append(" ASC, ");
+			} else {
+				sb.append(" DESC, ");
+			}
 		}
-		int lastAndIndex = sb.lastIndexOf(AND);
+		int lastAndIndex = sb.lastIndexOf(",");
 		String result = null;
 		if (-1 != lastAndIndex) {
 			result = sb.substring(0, lastAndIndex).toString();
@@ -223,6 +224,7 @@ public class SQLiteConditionBuilder implements IConditionBuilder {
 	
 	private static class Orderby {
 		private String column;
+		private boolean asc;
 	}
 
 }

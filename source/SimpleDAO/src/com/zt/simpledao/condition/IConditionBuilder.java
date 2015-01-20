@@ -21,7 +21,7 @@ public interface IConditionBuilder {
 	
 	<E> IConditionBuilder like(E pattern);
 	
-	IConditionBuilder orderby(String column);
+	IConditionBuilder orderby(String column, boolean asc);
 	
 	IConditionBuilder and();
 	
