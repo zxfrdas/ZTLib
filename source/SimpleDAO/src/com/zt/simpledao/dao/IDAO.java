@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import android.content.ContentValues;
 import android.database.Cursor;
 
 import com.zt.simpledao.condition.Condition;
@@ -11,6 +12,15 @@ import com.zt.simpledao.condition.IConditionBuilder;
 
 public interface IDAO<T> {
 
+	/**
+	 * 数据库单个插入操作。
+	 * 
+	 * @param valuesList
+	 *            试图插入的ContentValues列表
+	 * @return 成功返回{@code true}，反之{@code false}
+	 */
+	boolean insert(List<ContentValues> valuesList);
+	
 	/**
 	 * 数据库单个插入操作。
 	 * 

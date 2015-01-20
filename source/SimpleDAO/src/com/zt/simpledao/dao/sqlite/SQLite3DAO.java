@@ -62,6 +62,29 @@ public abstract class SQLite3DAO<T> implements IDAO<T> {
 			int newVersion, IBeanProxy proxy);
 
 	@Override
+	public boolean insert(List<ContentValues> valuesList) {
+		long ret = -1;
+		mWriteLock.lock();
+		mDatabase.beginTransaction();
+		try {
+			for (ContentValues v : valuesList) {
+				ret = mDatabase.insert(tableName, null, v);
+			}
+			mDatabase.setTransactionSuccessful();
+		} catch (SQLiteException e) {
+			e.printStackTrace();
+			ret = -1;
+		} finally {
+			mDatabase.endTransaction();
+			mWriteLock.unlock();
+		}
+		if (-1 != ret) {
+			return true;
+		}
+		return false;
+	}
+	
+	@Override
 	public boolean insert(T item) {
 		long ret = -1;
 		ContentValues values = setColumnToContentValue(mParser.getAllColumnItem(),
