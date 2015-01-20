@@ -253,9 +253,13 @@ public abstract class SQLite3DAO<T> implements IDAO<T> {
 		mReadLock.lock();
 		try {
 			c = mDatabase
-					.query(tableName, null, condition.getSelection(),
-							condition.getSelectionArgs(), null, null,
-							condition.getOrderBy());
+					.query(tableName, //table name
+							null, //columns
+							condition.getSelection(), //selection
+							condition.getSelectionArgs(), //selection args
+							condition.getGroupby(), //groupby
+							null, //having
+							condition.getOrderBy()); //orderby
 		} catch (SQLiteException e) {
 			e.printStackTrace();
 		} finally {

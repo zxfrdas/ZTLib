@@ -5,6 +5,7 @@ public class Condition {
 	private String selection;
 	private String[] selectionArgs;
 	private String orderBy;
+	private String groupby;
 	
 	public Condition() {
 		
@@ -32,6 +33,14 @@ public class Condition {
 
 	public void setOrderBy(String orderBy) {
 		this.orderBy = orderBy;
+	}
+
+	public String getGroupby() {
+		return groupby;
+	}
+
+	public void setGroupby(String groupby) {
+		this.groupby = groupby;
 	}
 
 	@Override

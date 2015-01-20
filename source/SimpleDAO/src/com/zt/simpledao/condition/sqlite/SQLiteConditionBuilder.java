@@ -13,11 +13,13 @@ public class SQLiteConditionBuilder implements IConditionBuilder {
 	private static final String AND = "AND ";
 	private List<Where> mWheres;
 	private List<Orderby> mOrderbys;
+	private List<Groupby> mGroupbys;
 	private Where where;
 	
 	public SQLiteConditionBuilder() {
 		mWheres = new ArrayList<Where>();
 		mOrderbys = new ArrayList<Orderby>();
+		mGroupbys = new ArrayList<Groupby>();
 	}
 	
 	@Override
@@ -100,6 +102,15 @@ public class SQLiteConditionBuilder implements IConditionBuilder {
 		return this;
 	}
 
+	
+	@Override
+	public IConditionBuilder groupby(String column) {
+		Groupby groupby = new Groupby();
+		groupby.column = column;
+		mGroupbys.add(groupby);
+		return this;
+	}
+	
 	@Override
 	public IConditionBuilder and() {
 		if (null != where) {
@@ -115,6 +126,7 @@ public class SQLiteConditionBuilder implements IConditionBuilder {
 		condition.setSelection(createSelection());
 		condition.setSelectionArgs(createSelectionArgs());
 		condition.setOrderBy(createOrderby());
+		condition.setGroupby(createGroupby());
 		return condition;
 	}
 	
@@ -193,6 +205,20 @@ public class SQLiteConditionBuilder implements IConditionBuilder {
 		return result;
 	}
 	
+	private String createGroupby() {
+		StringBuilder sb = new StringBuilder();	
+		for (Groupby groupby : mGroupbys) {
+			sb.append(groupby.column);
+			sb.append(", ");
+		}
+		int lastAndIndex = sb.lastIndexOf(",");
+		String result = null;
+		if (-1 != lastAndIndex) {
+			result = sb.substring(0, lastAndIndex).toString();
+		}
+		return result;
+	}
+	
 	private static class Where {
 		private String column;
 		private EnumCondition condition;
@@ -227,4 +253,7 @@ public class SQLiteConditionBuilder implements IConditionBuilder {
 		private boolean asc;
 	}
 
+	private static class Groupby {
+		private String column;
+	}
 }
