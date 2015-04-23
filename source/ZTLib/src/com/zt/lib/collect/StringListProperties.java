@@ -14,6 +14,7 @@ import java.io.Writer;
 import java.nio.charset.Charset;
 import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.UnsupportedCharsetException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
@@ -351,7 +352,7 @@ public class StringListProperties extends StringListHashTable {
                         String temp = new String(buf, 0, offset);
                         // ZT Patch Start
                         String key = temp.substring(0, keyLength);
-                        List<String> value = Arrays.asList(temp.substring(keyLength));
+                        List<String> value = new ArrayList<String>(Arrays.asList(temp.substring(keyLength)));
                         put(key, value);
                         // ZT Patch End
                     }
@@ -411,7 +412,7 @@ public class StringListProperties extends StringListHashTable {
             if (mode == SLASH) {
             	tmpValue += "\u0000";
             }
-            List<String> value = Arrays.asList(tmpValue);
+            List<String> value = new ArrayList<String>(Arrays.asList(tmpValue));
             // ZT Patch End
             put(key, value);
         }
@@ -492,7 +493,7 @@ public class StringListProperties extends StringListHashTable {
      */
     public Object setProperty(String name, String value) {
     	// ZT Patch Start
-        return put(name, Arrays.asList(value));
+        return put(name, new ArrayList<String>(Arrays.asList(value)));
         // ZT Patch End
     }
 
@@ -630,7 +631,7 @@ public class StringListProperties extends StringListHashTable {
                  * empty String
                  */
                 // ZT Patch Start
-                put(key, Arrays.asList(value));
+                put(key, new ArrayList<String>(Arrays.asList(value)));
                 // ZT Patch End
             }
         } catch (IOException e) {
