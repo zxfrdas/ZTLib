@@ -24,12 +24,12 @@ public final class ReaderWriterFactory {
 	}
 	
 	@SuppressWarnings("unchecked")
-	public ReaderWriter getReaderWriterImpl(EnumConfigType eType)
+	public StringListReaderWriter getReaderWriterImpl(EnumConfigType eType)
 	{
-		ReaderWriter configRWer = null;
-		Class<ReaderWriter> c = null;
+		StringListReaderWriter configRWer = null;
+		Class<StringListReaderWriter> c = null;
 		try {
-			c = (Class<ReaderWriter>) Class.forName(
+			c = (Class<StringListReaderWriter>) Class.forName(
 					"com.zt.lib.config.ReaderWriterImpl" + "." + classNameMap.get(eType.value()) +
 					"ReaderWriterImpl");
 		} catch (ClassNotFoundException e) {

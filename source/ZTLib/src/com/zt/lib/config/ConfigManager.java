@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
+import java.lang.reflect.Field;
 import java.util.Hashtable;
 import java.util.Map;
 import java.util.Observable;
@@ -14,7 +15,6 @@ import android.os.Handler;
 import android.os.Looper;
 
 import com.zt.lib.collect.SingletonValueMap;
-import com.zt.lib.exceptions.NullArgException;
 import com.zt.lib.io.StreamHelper;
 import com.zt.lib.util.Print;
 import com.zt.lib.util.Reflector;
@@ -33,7 +33,7 @@ public class ConfigManager extends Observable {
 
 	private static volatile ConfigManager instance;
 	private WeakReference<Context> mContextRef;
-	private ReaderWriter mRWer;
+	private StringListReaderWriter mRWer;
 	private String filePath;
 	private String fileName;
 	private EnumConfigType eType;
@@ -76,7 +76,10 @@ public class ConfigManager extends Observable {
 		int index = 0;
 		for (String name : names) {
 			Print.d("key = " + name + " value = " + annotationNames[index]);
-			mNameMap.put(name, annotationNames[index]);
+			if (null != annotationNames[index] && !annotationNames[index].isEmpty()) {
+				// 该属性被声明为要处理的配置项
+				mNameMap.put(name, annotationNames[index]);
+			}
 			index++;
 		}
 	}
@@ -160,48 +163,6 @@ public class ConfigManager extends Observable {
 	}
 
 	/**
-	 * 获取指定名称的值
-	 * 
-	 * @param key
-	 * @return value to get
-	 */
-	public Object getValue(String key) {
-		return mRWer.get(key);
-	}
-
-	/**
-	 * 获取包括所有值的数组
-	 * 
-	 * @return 长度可能为0
-	 */
-	public Object[] getValues() {
-		Map<String, ?> map = mRWer.getAll();
-		Object[] values = new Object[map.size()];
-		int index = 0;
-		for (Object o : map.values()) {
-			values[index] = o;
-			index++;
-		}
-		return values;
-	}
-
-	/**
-	 * 获取包括所有键的字符串数组
-	 * 
-	 * @return 长度可能为0
-	 */
-	public String[] getKeys() {
-		Map<String, ?> map = mRWer.getAll();
-		String[] str = new String[map.size()];
-		int index = 0;
-		for (String s : map.keySet()) {
-			str[index] = s;
-			index++;
-		}
-		return str;
-	}
-
-	/**
 	 * 从assets目录下读取指定名称的默认配置文件，恢复内存中数值和文件中数值。
 	 * 
 	 * @param name
@@ -250,7 +211,7 @@ public class ConfigManager extends Observable {
 		reLoadAllValue(mRWer);
 	}
 
-	private synchronized void reLoadAllValue(ReaderWriter rw)
+	private synchronized void reLoadAllValue(StringListReaderWriter rw)
 			throws NullPointerException {
 		if (null == mConfigData) {
 			return;
@@ -266,39 +227,6 @@ public class ConfigManager extends Observable {
 			}
 		}
 		notifyConfigChanged();
-	}
-
-	/**
-	 * 将指定输入流中的数据赋值给配置参数类，不写入文件。
-	 * <p>
-	 * 可用于根据规定，在一定条件下临时变更配置参数
-	 * 
-	 * @param is
-	 *            包含配置参数键值对的文件输入流
-	 * @throws NullArgException
-	 *             输入流为空时抛出错误
-	 */
-	public synchronized void tempLoadFile(InputStream is) throws NullArgException {
-		if (null == is)
-			throw new NullArgException();
-		String tempFile = "tempFile";
-		try {
-			StreamHelper.output(
-					is,
-					mContextRef.get().openFileOutput(
-							tempFile + EnumConfigType.PROP.value(),
-							Context.MODE_MULTI_PROCESS));
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		ReaderWriter tempRWer = ReaderWriterFactory.getInstance()
-				.getReaderWriterImpl(EnumConfigType.PROP);
-		try {
-			tempRWer.loadFile(tempFile, mContextRef.get());
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		reLoadAllValue(tempRWer);
 	}
 
 	/**
@@ -320,11 +248,23 @@ public class ConfigManager extends Observable {
 		if (null == mConfigData) {
 			return this;
 		}
-		String[] names = Reflector.getFieldNames(mConfigData.getClass());
-		Object[] values = Reflector.getFieldValues(mConfigData);
 		Map<String, Object> map = new Hashtable<String, Object>();
-		for (int i = 0; i < names.length; i++) {
-			map.put(mNameMap.get(names[i]), values[i]);
+		Field[] fields = Reflector.getFields(mConfigData);
+		for (Field field : fields) {
+			field.setAccessible(true);
+			String configName = mNameMap.get(field.getName());
+			Object configValue = null;
+			try {
+				configValue = field.get(mConfigData);
+			} catch (IllegalAccessException e) {
+				e.printStackTrace();
+			} catch (IllegalArgumentException e) {
+				e.printStackTrace();
+			}
+			Print.d("field = " + field.getName() + ", configName = " + configName + ", configValue = " + configValue);
+			if (null != configName && null != configValue) {
+				map.put(configName, configValue);
+			}
 		}
 		mRWer.setAll(map).commit();
 		return this;

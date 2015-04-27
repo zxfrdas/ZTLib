@@ -4,74 +4,68 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import android.content.Context;
 
-import com.zt.lib.collect.SetValueProperties;
+import com.zt.lib.collect.StringListProperties;
 import com.zt.lib.config.EnumConfigType;
-import com.zt.lib.config.ReaderWriter;
+import com.zt.lib.config.StringListReaderWriter;
 
-public class PropReaderWriterImpl implements ReaderWriter {
+public class PropReaderWriterImpl implements StringListReaderWriter {
 
 	private WeakReference<Context> mContextRef;
-	private SetValueProperties mProper;
+	private StringListProperties mProper;
 	private String mFileName;
 
 	@Override
 	public void loadFile(String name, Context context) throws IOException {
 		mContextRef = new WeakReference<Context>(context);
 		mFileName = name + EnumConfigType.PROP.value();
-		mProper = new SetValueProperties();
+		mProper = new StringListProperties();
 		mProper.load(new InputStreamReader(mContextRef.get()
 				.openFileInput(mFileName)));
 	}
-
+	
 	@Override
-	public Object get(String name) {
-		Object o = null;
-		if (null != mProper) {
-			o = mProper.getByArray(name);
-		}
-		return o;
-	}
-
-	@Override
-	public int getInt(String name) {
-		int i = 0;
+	public List<Integer> getInt(String name) {
+		List<Integer> results = new ArrayList<Integer>();
 		if (null != mProper && null != mProper.getProperty(name)) {
-			i = Integer.valueOf(mProper.getProperty(name));
+			List<String> org = mProper.getProperty(name);
+			for (String s : org) {
+				results.add(Integer.valueOf(s));
+			}
 		}
-		return i;
+		return results;
 	}
 
 	@Override
-	public boolean getBoolean(String name) {
-		boolean b = false;
+	public List<Boolean> getBoolean(String name) {
+		List<Boolean> results = new ArrayList<Boolean>();
 		if (null != mProper && null != mProper.getProperty(name)) {
-			b = Boolean.valueOf(mProper.getProperty(name));
+			List<String> org = mProper.getProperty(name);
+			for (String s : org) {
+				results.add(Boolean.valueOf(s));
+			}
 		}
-		return b;
+		return results;
 	}
 
 	@Override
-	public String getString(String name) {
-		StringBuilder sb = new StringBuilder();
+	public List<String> getString(String name) {
+		List<String> results = new ArrayList<String>();
 		if (null != mProper && null != mProper.getProperty(name)) {
-			sb.append(mProper.getProperty(name));
+			List<String> org = mProper.getProperty(name);
+			for (String s : org) {
+				results.add(s);
+			}
 		}
-		return sb.toString();
-	}
-
-	@Override
-	public String[] getStringArray(String name) {
-		String[] sArray = null;
-		if (null != mProper) {
-			sArray = mProper.getPropertyAll(name);
-		}
-		return sArray;
+		return results;
 	}
 
 	@Override
@@ -79,13 +73,13 @@ public class PropReaderWriterImpl implements ReaderWriter {
 		Map<String, Object> m = new Hashtable<String, Object>();
 		Object o = null;
 		if (null != mProper) {
-			for (Map.Entry<String, Set<String>> entry : mProper.entrySet()) {
-				String[] array = mProper.setToArray(entry.getValue());
+			for (Map.Entry<String, List<String>> entry : mProper.entrySet()) {
+				List<String> value = entry.getValue();
 				o = null;
-				if (1 == array.length) {
-					o = array[0];
+				if (1 == value.size()) {
+					o = value.get(0);
 				} else {
-					o = array;
+					o = value;
 				}
 				m.put(entry.getKey(), o);
 			}
@@ -94,23 +88,15 @@ public class PropReaderWriterImpl implements ReaderWriter {
 	}
 
 	@Override
-	public ReaderWriter set(String name, Object value) {
+	public StringListReaderWriter set(String name, Object value) {
 		if (null != mProper) {
-			mProper.put(name, value);
+			mProper.put(name, new ArrayList<String>(Arrays.asList(value.toString())));
 		}
 		return this;
 	}
 
 	@Override
-	public ReaderWriter setInt(String name, int value) {
-		if (null != mProper) {
-			mProper.setProperty(name, String.valueOf(value));
-		}
-		return this;
-	}
-
-	@Override
-	public ReaderWriter setBoolean(String name, boolean value) {
+	public StringListReaderWriter setInt(String name, int value) {
 		if (null != mProper) {
 			mProper.setProperty(name, String.valueOf(value));
 		}
@@ -118,7 +104,15 @@ public class PropReaderWriterImpl implements ReaderWriter {
 	}
 
 	@Override
-	public ReaderWriter setString(String name, String value) {
+	public StringListReaderWriter setBoolean(String name, boolean value) {
+		if (null != mProper) {
+			mProper.setProperty(name, String.valueOf(value));
+		}
+		return this;
+	}
+
+	@Override
+	public StringListReaderWriter setString(String name, String value) {
 		if (null != mProper) {
 			mProper.setProperty(name, value);
 		}
@@ -126,18 +120,29 @@ public class PropReaderWriterImpl implements ReaderWriter {
 	}
 
 	@Override
-	public ReaderWriter setStringArray(String name, String[] value) {
-		if (null != mProper) {
-			mProper.put(name, value);
-		}
-		return this;
-	}
-
-	@Override
-	public ReaderWriter setAll(Map<String, ?> value) {
+	public StringListReaderWriter setAll(Map<String, ?> value) {
 		if (null != mProper) {
 			for (Map.Entry<String, ?> entry : value.entrySet()) {
-				mProper.put(entry.getKey(), entry.getValue());
+				final String k = entry.getKey();
+				final Object v = entry.getValue();
+				List<String> newV = new ArrayList<String>();
+				if (v instanceof String) {
+					newV.add((String) v);
+				} else if (v instanceof String[]) {
+					String[] temp = (String[]) v;
+					newV = new ArrayList<String>(Arrays.asList(temp));
+				} else if (v instanceof Set<?>) {
+					Set<?> temp = (Set<?>) v;
+					for (Object o : temp) {
+						newV.add(o.toString());
+					}
+				} else if (v instanceof List<?>) {
+					List<?> temp = (List<?>) v;
+					for (Object o : temp) {
+						newV.add(o.toString());
+					}
+				}
+				mProper.put(k, newV);
 			}
 		}
 		return this;

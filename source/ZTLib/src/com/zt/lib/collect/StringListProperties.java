@@ -127,9 +127,11 @@ public class StringListProperties extends StringListHashTable {
      *            the name of the property to find.
      * @return the named property value, or {@code null} if it can't be found.
      */
-    public String getProperty(String name) {
-        Object result = super.get(name);
-        String property = result instanceof String ? (String) result : null;
+    public List<String> getProperty(String name) {
+    	// ZT Patch Start
+    	List<String> result = super.get(name);
+        List<String> property = result instanceof List<?> ? result : null;
+        // ZT Patch End
         if (property == null && defaults != null) {
             property = defaults.getProperty(name);
         }
@@ -148,15 +150,17 @@ public class StringListProperties extends StringListHashTable {
      *            the default value.
      * @return the named property value.
      */
-    public String getProperty(String name, String defaultValue) {
-        Object result = super.get(name);
-        String property = result instanceof String ? (String) result : null;
+    public List<String> getProperty(String name, String defaultValue) {
+    	// ZT Patch Start
+    	List<String> result = super.get(name);
+    	List<String> property = result instanceof List<?> ? result : null;
         if (property == null && defaults != null) {
             property = defaults.getProperty(name);
         }
         if (property == null) {
-            return defaultValue;
+            return new ArrayList<String>(Arrays.asList(defaultValue));
         }
+        // ZT Patch End
         return property;
     }
 

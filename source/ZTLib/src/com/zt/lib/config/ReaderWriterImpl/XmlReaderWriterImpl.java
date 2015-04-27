@@ -2,8 +2,10 @@ package com.zt.lib.config.ReaderWriterImpl;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -11,9 +13,9 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 
-import com.zt.lib.config.ReaderWriter;
+import com.zt.lib.config.StringListReaderWriter;
 
-public class XmlReaderWriterImpl implements ReaderWriter {
+public class XmlReaderWriterImpl implements StringListReaderWriter {
 
 	private WeakReference<Context> mContextRef;
 	private SharedPreferences mSharedPref;
@@ -29,80 +31,85 @@ public class XmlReaderWriterImpl implements ReaderWriter {
 		mSpEditor = mSharedPref.edit();
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
-	public Object get(String name) {
-		Object o = null;
+	public List<Integer> getInt(String name) {
+		List<Integer> results = new ArrayList<Integer>();
 		if (null != mSharedPref) {
-			if (mSharedPref.getAll().get(name) instanceof Set<?>) {
-				Set<String> set = (Set<String>) mSharedPref.getAll().get(name);
-				String[] strings = new String[set.size()];
-				o = set.toArray(strings);
+			Set<String> v = mSharedPref.getStringSet(name, null);
+			if (null != v) {
+				for (String s : v) {
+					results.add(Integer.valueOf(s));
+				}
+			} else {
+				final int result = mSharedPref.getInt(name, Integer.MIN_VALUE);
+				if (Integer.MIN_VALUE != result) {
+					results.add(result);
+				}
 			}
 		}
-		return o;
+		return results;
 	}
 
 	@Override
-	public int getInt(String name) {
-		int i = 0;
+	public List<Boolean> getBoolean(String name) {
+		List<Boolean> results = new ArrayList<Boolean>();
 		if (null != mSharedPref) {
-			i = mSharedPref.getInt(name, 0);
+			Set<String> v = mSharedPref.getStringSet(name, null);
+			if (null != v) {
+				for (String s : v) {
+					results.add(Boolean.valueOf(s));
+				}
+			} else {
+				results.add(mSharedPref.getBoolean(name, false));
+			}
 		}
-		return i;
+		return results;
 	}
 
 	@Override
-	public boolean getBoolean(String name) {
-		boolean b = false;
+	public List<String> getString(String name) {
+		List<String> results = new ArrayList<String>();
 		if (null != mSharedPref) {
-			b = mSharedPref.getBoolean(name, false);
+			Set<String> v = mSharedPref.getStringSet(name, null);
+			if (null != v) {
+				for (String s : v) {
+					results.add(s);
+				}
+			} else {
+				final String result = mSharedPref.getString(name, "");
+				if (!result.isEmpty()) {
+					results.add(result);
+				}
+			}
 		}
-		return b;
-	}
-
-	@Override
-	public String getString(String name) {
-		String s = "";
-		if (null != mSharedPref) {
-			s = mSharedPref.getString(name, "");
-		}
-		return s;
-	}
-
-	@Override
-	public String[] getStringArray(String name) {
-		String[] sArray = null;
-		if (null != mSharedPref) {
-			Set<String> set = null;
-			set = mSharedPref.getStringSet(name, new HashSet<String>());
-			String[] strings = new String[set.size()];
-			sArray = set.toArray(strings);
-		}
-		return sArray;
+		return results;
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
 	public Map<String, ?> getAll() {
 		Map<String, Object> m = new Hashtable<String, Object>();
-		Object o = null;
+		Object newV = null;
 		if (null != mSharedPref) {
 			for (Map.Entry<String, ?> entry : mSharedPref.getAll().entrySet()) {
-				o = entry.getValue();
-				if (o instanceof Set<?>) {
-					Set<String> set = (Set<String>) entry.getValue();
-					String[] strings = new String[set.size()];
-					o = set.toArray(strings);
+				final Object value = entry.getValue();
+				if (value instanceof Set<?>) {
+					Set<?> temp = (Set<?>) value;
+					newV = new ArrayList<String>(temp.size());
+					for (Object o : temp) {
+						((List<String>) newV).add(o.toString());
+					}
+				} else {
+					newV = value.toString();
 				}
-				m.put(entry.getKey(), o);
+				m.put(entry.getKey(), newV);
 			}
 		}
 		return m;
 	}
 
 	@Override
-	public ReaderWriter set(String name, Object value) {
+	public StringListReaderWriter set(String name, Object value) {
 		if (null != mSharedPref) {
 			setByType(name, value);
 		}
@@ -110,64 +117,48 @@ public class XmlReaderWriterImpl implements ReaderWriter {
 	}
 
 	private void setByType(String name, Object value) {
-		Class<?> c = value.getClass();
-		if (int.class.equals(c) || Integer.class.equals(c)) {
-			mSpEditor.putInt(name, Integer.valueOf(value.toString()));
-		} else if (float.class.equals(c) || Float.class.equals(c)) {
-			mSpEditor.putFloat(name, Float.valueOf(value.toString()));
-		} else if (long.class.equals(c) || Long.class.equals(c)) {
-			mSpEditor.putLong(name, Long.valueOf(value.toString()));
-		} else if (boolean.class.equals(c) || Boolean.class.equals(c)) {
-			mSpEditor.putBoolean(name, Boolean.valueOf(value.toString()));
-		} else if (String.class.equals(c)) {
-			mSpEditor.putString(name, value.toString());
-		} else if (String[].class.equals(c)) {
-			Set<String> setValue = new HashSet<String>();
-			for (String s : (String[]) value) {
-				setValue.add(s);
+		Set<String> v = new HashSet<String>();
+		if (value instanceof String[]) {
+			final int length = ((String[]) value).length;
+			for (int i = 0; i < length; i ++) {
+				v.add(((String[]) value)[i]);
 			}
-			mSpEditor.putStringSet(name, setValue);
-		}
-	}
-
-	@Override
-	public ReaderWriter setInt(String name, int value) {
-		if (null != mSharedPref) {
-			mSpEditor.putInt(name, value);
-		}
-		return this;
-	}
-
-	@Override
-	public ReaderWriter setBoolean(String name, boolean value) {
-		if (null != mSharedPref) {
-			mSpEditor.putBoolean(name, value);
-		}
-		return this;
-	}
-
-	@Override
-	public ReaderWriter setString(String name, String value) {
-		if (null != mSharedPref) {
-			mSpEditor.putString(name, value);
-		}
-		return this;
-	}
-
-	@Override
-	public ReaderWriter setStringArray(String name, String[] value) {
-		if (null != mSharedPref) {
-			Set<String> set = new HashSet<String>();
-			for (String s : value) {
-				set.add(s);
+		} else if (value instanceof Set<?>) {
+			Set<?> temp = (Set<?>) value;
+			for (Object o : temp) {
+				v.add(o.toString());
 			}
-			mSpEditor.putStringSet(name, set);
+		} else if (value instanceof List<?>) {
+			List<?> temp = (List<?>) value;
+			for (Object o : temp) {
+				v.add(o.toString());
+			}
+		} else {
+			v.add(value.toString());
 		}
+		mSpEditor.putStringSet(name, v);
+	}
+
+	@Override
+	public StringListReaderWriter setInt(String name, int value) {
+		set(name, value);
 		return this;
 	}
 
 	@Override
-	public ReaderWriter setAll(Map<String, ?> value) {
+	public StringListReaderWriter setBoolean(String name, boolean value) {
+		set(name, value);
+		return this;
+	}
+
+	@Override
+	public StringListReaderWriter setString(String name, String value) {
+		set(name, value);
+		return this;
+	}
+
+	@Override
+	public StringListReaderWriter setAll(Map<String, ?> value) {
 		if (null != mSharedPref) {
 			for (Map.Entry<String, ?> entry : value.entrySet()) {
 				setByType(entry.getKey(), entry.getValue());

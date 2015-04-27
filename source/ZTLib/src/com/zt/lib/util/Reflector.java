@@ -4,6 +4,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.List;
 
 import com.zt.lib.config.TargetName;
 
@@ -201,22 +202,8 @@ public class Reflector {
 			e.printStackTrace();
 		}
 	}
-
-	/**
-	 * 尝试输入的对象转型为指定对象。
-	 * <p>
-	 * 目前支持String转为int/Integer,float/Float,long/Long,boolean/Boolean
-	 * <p>
-	 * 以及String[]转为
-	 * int[]/Integer[],float[]/Float[],long[]/Long[],boolean[]/Boolean[]
-	 * 
-	 * @param type
-	 *            希望转为的型
-	 * @param value
-	 *            被转型对象
-	 * @return 转型后的对象
-	 */
-	public static Object formatObjectType(Class<?> type, Object value) {
+	
+	private static Object formatObjectType(Class<?> type, Object value) {
 		Object newValue = null;
 		if (value instanceof String) {
 			if (int.class.equals(type) || Integer.class.equals(type)) {
@@ -227,6 +214,16 @@ public class Reflector {
 				newValue = Long.valueOf(value.toString());
 			} else if (boolean.class.equals(type) || Boolean.class.equals(type)) {
 				newValue = Boolean.valueOf(value.toString());
+			}
+		} else if (value instanceof List<?>) {
+			final List<?> temps = (List<?>) value;
+			if (1 == temps.size()) {
+				newValue = formatObjectType(type, temps.get(0));
+			} else if (type.isAssignableFrom(temps.getClass())) {
+				newValue = value;
+			} else if (type.isArray()) {
+				String[] newTemps = new String[temps.size()];
+				newValue = formatObjectType(type, temps.toArray(newTemps));
 			}
 		} else if (value instanceof String[]) {
 			if (int[].class.equals(type) || Integer[].class.equals(type)) {
