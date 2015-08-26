@@ -57,6 +57,8 @@ public class MutipleSourcePublisher extends Handler implements IPublisher<TestIt
 			return;
 		}
 		Collection<TestItem> results = mCacher.getAll(name);
+		// 合并去重
+		
 		notifier.onItemPublish(results);
 	}
 	
