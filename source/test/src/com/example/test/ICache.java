@@ -1,9 +1,12 @@
 package com.example.test;
 
-import java.util.Collection;
-
-public interface ICache<T> {
-	Collection<T> getAll(String key);
-	void putAll(String key, Collection<T> value);
-	boolean containsKey(String key);
+public interface ICache<K, V> {
+	public interface ICacheObserver<K, V> {
+		V prePutValue(V olds, V nows);
+	}
+	void setObserver(ICacheObserver<K, V> observer);
+	V get(K key);
+	V put(K key, V value);
+	boolean containsKey(K key);
+	boolean containsValue(V value);
 }

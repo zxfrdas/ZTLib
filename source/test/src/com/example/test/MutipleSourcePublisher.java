@@ -2,7 +2,11 @@ package com.example.test;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
@@ -10,30 +14,85 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.example.test.ICache.ICacheObserver;
+
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 
-public class MutipleSourcePublisher extends Handler implements IPublisher<TestItem> {
+public class MutipleSourcePublisher extends Handler implements
+		IPublisher<TestItem>, ICacheObserver<String, Map<TestItem, Collection<String>>> {
 	private static final int MSG_PUBLISH = 0x01;
-	private ICache<TestItem> mCacher;
+	private ICache<String, Map<TestItem, Collection<String>>> mCacher;
 	private ConcurrentMap<String, Boolean> mCompleted;
 	private ExecutorService mThreads;
 	private AtomicInteger mSubscribeID;
+	private SourceController mSourceController;
 	
 	private static final class RequestItem {
 		int id;
 		String key;
-		Collection<TestItem> results;
+		Map<TestItem, Collection<String>> results;
 		INotifier<TestItem> notifier;
 	}
 	
 	public MutipleSourcePublisher() {
 		super(Looper.getMainLooper());
-		mCacher = new FIFOCache<TestItem>(3);
+		mSourceController = SourceController.getInstance();
+		mCacher = new FIFOCache<String, Map<TestItem, Collection<String>>>(3);
+		mCacher.setObserver(this);
 		mCompleted = new ConcurrentHashMap<String, Boolean>();
 		mThreads = Executors.newSingleThreadScheduledExecutor();
 		mSubscribeID = new AtomicInteger(0);
+	}
+	
+	@Override
+	public void handleMessage(Message msg) {
+		switch (msg.what) {
+		case MSG_PUBLISH:
+			RequestItem item = (RequestItem) msg.obj;
+			// 加入缓存
+			mCacher.put(item.key, item.results);
+			// 发布
+			publish(item.id, item.key, item.notifier);
+			break;
+
+		default:
+			break;
+		}
+	}
+	
+	@Override
+	public Map<TestItem, Collection<String>> prePutValue(Map<TestItem, Collection<String>> olds,
+			Map<TestItem, Collection<String>> nows) {
+		if (null == olds || olds.isEmpty()) {
+			return nows;
+		}
+		if (null == nows || nows.isEmpty()) {
+			return olds;
+		}
+		return mergeSameName(olds, nows);
+	}
+	
+	private Map<TestItem, Collection<String>> mergeSameName(
+			Map<TestItem, Collection<String>> olds,
+			Map<TestItem, Collection<String>> nows) {
+		Map<TestItem, Collection<String>> results = new HashMap<TestItem, Collection<String>>();
+		Map<TestItem, Boolean> flags = new HashMap<TestItem, Boolean>();
+		for (Entry<TestItem, Collection<String>> old : olds.entrySet()) {
+			results.put(old.getKey(), old.getValue());
+			for (Entry<TestItem, Collection<String>> now : nows.entrySet()) {
+				if (flags.get(now.getKey())) {
+					continue;
+				}
+				if (old.getKey().getVideoName().equals(now.getKey().getVideoName())) {
+					now.getValue().addAll(old.getValue());
+					flags.put(now.getKey(), true);
+				}
+				results.put(now.getKey(), now.getValue());
+			}
+		}
+		return results;
 	}
 	
 	@Override
@@ -56,29 +115,13 @@ public class MutipleSourcePublisher extends Handler implements IPublisher<TestIt
 		if (!checkIfThisRequestAlive(id)) {
 			return;
 		}
-		Collection<TestItem> results = mCacher.getAll(name);
-		// 合并去重
-		
-		notifier.onItemPublish(results);
+		Map<TestItem, Collection<String>> results = mCacher.get(name);
+		mSourceController.setCurrents(results);
+		notifier.onItemPublish(results.keySet());
 	}
 	
-	@Override
-	public void handleMessage(Message msg) {
-		switch (msg.what) {
-		case MSG_PUBLISH:
-			RequestItem item = (RequestItem) msg.obj;
-			// 加入缓存
-			mCacher.putAll(item.key, item.results);
-			// 发布
-			publish(item.id, item.key, item.notifier);
-			break;
-
-		default:
-			break;
-		}
-	}
-	
-	private void asyncGetResults(final int id, final String key, final INotifier<TestItem> notifier) {
+	private void asyncGetResults(final int id, final String key,
+			final INotifier<TestItem> notifier) {
 		if (!checkIfThisRequestAlive(id)) {
 			return;
 		}
@@ -93,8 +136,9 @@ public class MutipleSourcePublisher extends Handler implements IPublisher<TestIt
 					if (checkIfThisRequestAlive(id)) {
 						// 获取请求结果数据
 						List<TestItem> results = mockCreateTestItem(key, i);
+						Map<TestItem, Collection<String>> finalResults = convertTestItems(results, i + "");
 						// 推送至UI Thread
-						sendMessage(createMessage(id, key, results, notifier));
+						sendMessage(createMessage(id, key, finalResults, notifier));
 					} else {
 						// 有新请求则丢弃本次请求
 						isCompleted = false;
@@ -106,7 +150,7 @@ public class MutipleSourcePublisher extends Handler implements IPublisher<TestIt
 		});
 	}
 	
-	private Message createMessage(int id, String key, Collection<TestItem> results, INotifier<TestItem> notifier) {
+	private Message createMessage(int id, String key, Map<TestItem, Collection<String>> results, INotifier<TestItem> notifier) {
 		RequestItem item = new RequestItem();
 		item.id = id;
 		item.key = key;
@@ -126,9 +170,19 @@ public class MutipleSourcePublisher extends Handler implements IPublisher<TestIt
 			e.printStackTrace();
 		}
 		List<TestItem> results = new ArrayList<TestItem>();
-		results.add(new TestItem(name + "0", source + ""));
-		results.add(new TestItem(name + "1", source + ""));
-		results.add(new TestItem(name + "2", source + ""));
+		results.add(new TestItem(name + "0"));
+		results.add(new TestItem(name + "1"));
+		results.add(new TestItem(name + "2"));
+		return results;
+	}
+	
+	private Map<TestItem, Collection<String>> convertTestItems(List<TestItem> items, String source) {
+		Map<TestItem, Collection<String>> results = new HashMap<TestItem, Collection<String>>();
+		Collection<String> sources = new HashSet<String>(1);
+		sources.add(source);
+		for (TestItem item : items) {
+			results.put(item, sources);
+		}
 		return results;
 	}
 	

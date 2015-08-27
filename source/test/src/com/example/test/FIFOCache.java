@@ -1,57 +1,75 @@
 package com.example.test;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
+import java.util.LinkedList;
 import java.util.Map;
 
-public class FIFOCache<T> implements ICache<T> {
-	private List<String> mKeys;
-	private Map<String, Collection<T>> mCache;
+public class FIFOCache<K, V> implements ICache<K, V> {
+	private LinkedList<K> mKeys;
+	private Map<K, V> mCache;
+	private ICacheObserver<K, V> mObserver;
+	private int capacity;
 	
 	public FIFOCache(int cap) {
-		mKeys = new ArrayList<String>(cap);
-		mCache = new HashMap<String, Collection<T>>();
+		if (0 >= cap) throw new IllegalArgumentException("capacity need more then zero");
+		mKeys = new LinkedList<K>();
+		mCache = new HashMap<K, V>();
 	}
 	
-	public boolean containsKey(String key) {
-		return containsIndex(getKeyIndex(key));
+	@Override
+	public void setObserver(ICacheObserver<K, V> observer) {
+		mObserver = observer;
 	}
 	
-	private boolean containsIndex(int index) {
-		return 0 <= index;
-	}
-	
-	private int getKeyIndex(String key) {
-		final int size = mKeys.size();
-		for (int i = 0; i < size; i ++) {
-			if (mKeys.get(i).equals(key)) {
-				return i;
-			}
-		}
-		return -1;
-	}
-	
-	public void putAll(String key, Collection<T> value) {
-		final int index = getKeyIndex(key);
-		String removed = null;
-		if (containsIndex(index)) {
-			// remove current
-			removed = mKeys.remove(index);
-		} else {
-			// remove first
-			removed = mKeys.remove(0);
-		}
-		// add last
-		mCache.remove(removed);
-		mKeys.add(key);
+	@Override
+	public V get(K key) {
+		return mCache.get(key);
 	}
 
 	@Override
-	public Collection<T> getAll(String key) {
-		// TODO Auto-generated method stub
-		return null;
+	public V put(K key, V value) {
+		mKeys.addLast(key);
+		
+		K removed = removeOtherKeyIfNeed(key);
+		if (null != removed) {
+			mCache.remove(removed);
+		}
+		
+		return mCache.put(key, processValueBeforePut(key, value));
+	}
+	
+	private K removeOtherKeyIfNeed(K key) {
+		final int index = mKeys.indexOf(key);
+		K removed = null;
+		try {
+			// cache中已经存在当前加入key，移除最先保存的
+			mKeys.remove(index);
+		} catch (IndexOutOfBoundsException e) {
+			// cache中不存在当前加入的key
+			if (capacity <= mKeys.size()) {
+				// 如果已经超出容量，cache需要把最早缓存的清除。
+				removed = mKeys.pollFirst();
+			}
+		}
+		return removed;
+	}
+	
+	private V processValueBeforePut(K key, V value) {
+		V afterProcess = value;
+		if (null != mObserver) {
+			afterProcess = mObserver.prePutValue(mCache.get(key), value);
+		}
+		return afterProcess;
+	}
+
+	@Override
+	public boolean containsKey(K key) {
+		return mCache.containsKey(key);
+	}
+
+	@Override
+	public boolean containsValue(V value) {
+		return mCache.containsValue(value);
 	}
 	
 }
