@@ -33,6 +33,9 @@ public class FIFOCache<K, V> implements ICache<K, V> {
 		K removed = removeOtherKeyIfNeed(key);
 		if (null != removed) {
 			mCache.remove(removed);
+			if (null != mObserver) {
+				mObserver.onKeyRemove(removed);
+			}
 		}
 		
 		return mCache.put(key, processValueBeforePut(key, value));
@@ -57,7 +60,7 @@ public class FIFOCache<K, V> implements ICache<K, V> {
 	private V processValueBeforePut(K key, V value) {
 		V afterProcess = value;
 		if (null != mObserver) {
-			afterProcess = mObserver.prePutValue(mCache.get(key), value);
+			afterProcess = mObserver.interceptValueBeforePut(key, value);
 		}
 		return afterProcess;
 	}
