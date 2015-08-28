@@ -1,28 +1,28 @@
 package com.example.test;
 
 /**
- * Simple cache interface that only provide get & put to modify the cache.
+ * Simple cache interface that only provide get & put.
  * <p> Instances should make their own rules to control cache size.
- * <p> And you will be notified by specified {@code ICacheObserver} when cache been modified if you already set.
+ * <p> And you will be notified by specified {@code ICacheObserver} when cache has modified if you already set the observer.
  * @param <K> Key
  * @param <V> Value
  */
 public interface ICache<K, V> {
 	/**
-	 * Observer of the cache. Will be notified when cache been modified.
+	 * Observer of the cache. Will be notified when cache has modified.
 	 * @param <K> Key
 	 * @param <V> Value
 	 */
 	public interface ICacheObserver<K, V> {
 		/**
-		 * Give you a chance to process the specified K-V.
+		 * Give you a chance to process the specified value before the K-V store in cache.
 		 * @param key
 		 * @param value
 		 * @return modified value
 		 */
 		V interceptValueBeforePut(K key, V value);
 		/**
-		 * Notify when the key has been removed.
+		 * Notify when the key has been removed from cache.
 		 * @param key
 		 */
 		void onKeyRemove(K key);
